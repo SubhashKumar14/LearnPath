@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Progress - RoadmapLearn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/user-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🗺️ RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/user-dashboard" class="btn btn-outline">Dashboard</a>
+                    <a href="/profile" class="btn btn-outline">Profile</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Page Header -->
+        <section class="text-center mb-4">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">My Learning Progress</h1>
+            <p style="color: #666; font-size: 1.1rem;">Track your journey across all roadmaps</p>
+        </section>
+
+        <!-- Overall Stats -->
+        <section class="stats-grid mb-4">
+            <div class="stat-card">
+                <span class="stat-number" id="total-roadmaps-following">0</span>
+                <span class="stat-label">Roadmaps Following</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="total-tasks-completed">0</span>
+                <span class="stat-label">Total Tasks Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="current-streak">0</span>
+                <span class="stat-label">Day Streak</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="average-progress">0%</span>
+                <span class="stat-label">Average Progress</span>
+            </div>
+        </section>
+
+        <!-- Progress Calendar (GitHub-style) -->
+        <section class="card mb-4">
+            <h2 class="card-title">Activity Calendar</h2>
+            <div class="card-content">
+                <div id="activity-calendar" class="text-center">
+                    <p style="color: #666; margin: 2rem 0;">
+                        📅 Coming soon: GitHub-style contribution calendar showing your daily learning activity
+                    </p>
+                    <div style="display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; max-width: 600px; margin: 0 auto;">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                    <div style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                        <span style="margin-right: 1rem;">Less</span>
+                        <span style="display: inline-block; width: 10px; height: 10px; background: #ebedf0; margin: 0 2px;"></span>
+                        <span style="display: inline-block; width: 10px; height: 10px; background: #c6e48b; margin: 0 2px;"></span>
+                        <span style="display: inline-block; width: 10px; height: 10px; background: #7bc96f; margin: 0 2px;"></span>
+                        <span style="display: inline-block; width: 10px; height: 10px; background: #239a3b; margin: 0 2px;"></span>
+                        <span style="display: inline-block; width: 10px; height: 10px; background: #196127; margin: 0 2px;"></span>
+                        <span style="margin-left: 1rem;">More</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Roadmaps Progress -->
+        <section>
+            <h2 style="color: #333; margin-bottom: 1.5rem;">Roadmap Progress</h2>
+            <div id="loading-progress" class="text-center">
+                <div class="spinner"></div>
+                <p>Loading your progress...</p>
+            </div>
+            <div id="progress-content" class="hidden">
+                <div id="roadmaps-progress-grid" class="dashboard-grid"></div>
+                <div id="no-progress" class="text-center hidden" style="padding: 3rem; color: #666;">
+                    <h3>No Progress Yet</h3>
+                    <p>Start following roadmaps to see your progress here.</p>
+                    <a href="/user-dashboard" class="btn btn-primary mt-2">Browse Roadmaps</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Activity -->
+        <section class="mt-4">
+            <h2 style="color: #333; margin-bottom: 1.5rem;">Recent Activity</h2>
+            <div class="card">
+                <div id="recent-activity">
+                    <div class="text-center" style="padding: 2rem; color: #666;">
+                        <p>Your recent learning activities will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Empowering learners worldwide.</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentUser = null;
+        let allRoadmaps = [];
+        let allProgress = {};
+
+        // Initialize progress page
+        async function initProgressPage() {
+            try {
+                // Get current user
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                currentUser = await userResponse.json();
+
+                // Load data
+                await Promise.all([loadRoadmaps(), loadAllProgress()]);
+                renderProgress();
+            } catch (error) {
+                console.error('Failed to initialize progress page:', error);
+                showError();
+            }
+        }
+
+        // Load all roadmaps
+        async function loadRoadmaps() {
+            try {
+                const response = await fetch('/api/roadmaps');
+                if (response.ok) {
+                    allRoadmaps = await response.json();
+                } else {
+                    allRoadmaps = createSampleRoadmaps();
+                }
+            } catch (error) {
+                console.error('Failed to load roadmaps:', error);
+                allRoadmaps = createSampleRoadmaps();
+            }
+        }
+
+        // Load progress for all roadmaps
+        async function loadAllProgress() {
+            try {
+                allProgress = {};
+                for (const roadmap of allRoadmaps) {
+                    const response = await fetch(`/api/progress/${roadmap.id}`);
+                    if (response.ok) {
+                        const progress = await response.json();
+                        allProgress[roadmap.id] = progress;
+                    } else {
+                        allProgress[roadmap.id] = [];
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load progress:', error);
+            }
+        }
+
+        // Create sample roadmaps (same as dashboard)
+        function createSampleRoadmaps() {
+            return [
+                {
+                    id: 1,
+                    title: "Data Structures & Algorithms",
+                    difficulty: "beginner",
+                    duration: "60 days",
+                    modules: [
+                        {
+                            id: 1,
+                            title: "Arrays and Strings",
+                            tasks: [
+                                { id: 1, title: "Two Sum Problem", description: "Learn about array traversal and hash maps" },
+                                { id: 2, title: "Valid Anagram", description: "String manipulation and character counting" },
+                                { id: 3, title: "Contains Duplicate", description: "Hash set usage for duplicate detection" },
+                                { id: 4, title: "Valid Palindrome", description: "Two-pointer technique practice" }
+                            ]
+                        },
+                        {
+                            id: 2,
+                            title: "Linked Lists",
+                            tasks: [
+                                { id: 5, title: "Reverse Linked List", description: "Learn pointer manipulation" },
+                                { id: 6, title: "Merge Two Sorted Lists", description: "Understand merging algorithms" },
+                                { id: 7, title: "Linked List Cycle", description: "Floyd's cycle detection algorithm" }
+                            ]
+                        },
+                        {
+                            id: 3,
+                            title: "Stacks and Queues",
+                            tasks: [
+                                { id: 8, title: "Valid Parentheses", description: "Stack operations practice" },
+                                { id: 9, title: "Implement Queue using Stacks", description: "FIFO vs LIFO understanding" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Full Stack Web Development",
+                    difficulty: "intermediate",
+                    duration: "90 days",
+                    modules: [
+                        {
+                            id: 4,
+                            title: "Frontend Fundamentals",
+                            tasks: [
+                                { id: 10, title: "HTML5 Semantics", description: "Modern HTML structure and accessibility" },
+                                { id: 11, title: "CSS Grid & Flexbox", description: "Advanced CSS layout techniques" },
+                                { id: 12, title: "JavaScript ES6+", description: "Modern JavaScript features" }
+                            ]
+                        }
+                    ]
+                }
+            ];
+        }
+
+        // Render progress page
+        function renderProgress() {
+            document.getElementById('loading-progress').classList.add('hidden');
+            document.getElementById('progress-content').classList.remove('hidden');
+
+            updateOverallStats();
+            renderRoadmapsProgress();
+            renderRecentActivity();
+            generateActivityCalendar();
+        }
+
+        // Update overall statistics
+        function updateOverallStats() {
+            const roadmapsWithProgress = Object.keys(allProgress).filter(id => allProgress[id].length > 0);
+            const totalCompleted = Object.values(allProgress).flat().length;
+            
+            document.getElementById('total-roadmaps-following').textContent = roadmapsWithProgress.length;
+            document.getElementById('total-tasks-completed').textContent = totalCompleted;
+            document.getElementById('current-streak').textContent = Math.floor(Math.random() * 15) + 1; // Mock streak
+            
+            // Calculate average progress
+            let totalProgress = 0;
+            let roadmapCount = 0;
+            
+            allRoadmaps.forEach(roadmap => {
+                const totalTasks = roadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+                const completedTasks = allProgress[roadmap.id] ? allProgress[roadmap.id].length : 0;
+                
+                if (totalTasks > 0) {
+                    totalProgress += (completedTasks / totalTasks) * 100;
+                    roadmapCount++;
+                }
+            });
+            
+            const averageProgress = roadmapCount > 0 ? Math.round(totalProgress / roadmapCount) : 0;
+            document.getElementById('average-progress').textContent = `${averageProgress}%`;
+        }
+
+        // Render roadmaps progress
+        function renderRoadmapsProgress() {
+            const grid = document.getElementById('roadmaps-progress-grid');
+            const noProgress = document.getElementById('no-progress');
+            
+            const roadmapsWithProgress = allRoadmaps.filter(roadmap => 
+                allProgress[roadmap.id] && allProgress[roadmap.id].length > 0
+            );
+            
+            if (roadmapsWithProgress.length === 0) {
+                grid.classList.add('hidden');
+                noProgress.classList.remove('hidden');
+                return;
+            }
+            
+            noProgress.classList.add('hidden');
+            grid.classList.remove('hidden');
+            
+            grid.innerHTML = allRoadmaps.map(roadmap => {
+                const progress = allProgress[roadmap.id] || [];
+                const totalTasks = roadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+                const completedTasks = progress.length;
+                const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                
+                // Only show roadmaps with some progress or all roadmaps
+                return `
+                    <div class="card">
+                        <div class="card-title">${roadmap.title}</div>
+                        <div class="card-content">
+                            <div class="roadmap-meta mb-2">
+                                <div class="meta-item">
+                                    <span class="difficulty-badge difficulty-${roadmap.difficulty}">${roadmap.difficulty}</span>
+                                </div>
+                                <div class="meta-item">
+                                    ⏱️ ${roadmap.duration}
+                                </div>
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                                </div>
+                                <div class="progress-text">${completedTasks}/${totalTasks} tasks completed (${progressPercentage}%)</div>
+                            </div>
+                            
+                            <!-- Module breakdown -->
+                            <div style="margin-top: 1rem;">
+                                <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: #666;">Module Progress:</h4>
+                                ${roadmap.modules.map(module => {
+                                    const moduleProgress = progress.filter(p => p.module_id === module.id).length;
+                                    const moduleTotal = module.tasks.length;
+                                    const modulePercentage = moduleTotal > 0 ? Math.round((moduleProgress / moduleTotal) * 100) : 0;
+                                    
+                                    return `
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; font-size: 0.85rem;">
+                                            <span style="color: #666;">${module.title}</span>
+                                            <span style="color: #333; font-weight: 500;">${moduleProgress}/${moduleTotal} (${modulePercentage}%)</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            
+                            <div class="mt-3">
+                                <a href="/roadmap/${roadmap.id}" class="btn btn-primary">
+                                    ${progressPercentage > 0 ? 'Continue Learning' : 'Start Learning'}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render recent activity
+        function renderRecentActivity() {
+            const activityContainer = document.getElementById('recent-activity');
+            
+            // Generate mock recent activities
+            const activities = [];
+            const today = new Date();
+            
+            // Add some recent activities based on progress
+            Object.keys(allProgress).forEach(roadmapId => {
+                const roadmap = allRoadmaps.find(r => r.id == roadmapId);
+                const progress = allProgress[roadmapId];
+                
+                if (roadmap && progress.length > 0) {
+                    // Add recent completions (mock timestamps)
+                    progress.slice(-3).forEach((item, index) => {
+                        const module = roadmap.modules.find(m => m.id === item.module_id);
+                        const task = module ? module.tasks.find(t => t.id === item.task_id) : null;
+                        
+                        if (module && task) {
+                            const activityDate = new Date(today);
+                            activityDate.setDate(today.getDate() - index);
+                            
+                            activities.push({
+                                type: 'completed',
+                                roadmap: roadmap.title,
+                                module: module.title,
+                                task: task.title,
+                                date: activityDate
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // Sort by date (most recent first)
+            activities.sort((a, b) => b.date - a.date);
+            
+            if (activities.length === 0) {
+                activityContainer.innerHTML = `
+                    <div class="text-center" style="padding: 2rem; color: #666;">
+                        <p>No recent activity. Start learning to see your progress here!</p>
+                        <a href="/user-dashboard" class="btn btn-primary mt-2">Browse Roadmaps</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            activityContainer.innerHTML = `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    ${activities.slice(0, 10).map(activity => `
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-bottom: 1px solid #e0e0e0;">
+                            <div style="width: 8px; height: 8px; background: #28a745; border-radius: 50%; flex-shrink: 0;"></div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500; color: #333;">
+                                    Completed "${activity.task}" in ${activity.module}
+                                </div>
+                                <div style="font-size: 0.85rem; color: #666;">
+                                    ${activity.roadmap} • ${formatDate(activity.date)}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Generate activity calendar (simplified version)
+        function generateActivityCalendar() {
+            const calendar = document.getElementById('activity-calendar');
+            const today = new Date();
+            const yearAgo = new Date(today);
+            yearAgo.setFullYear(today.getFullYear() - 1);
+            
+            // This would normally generate a full year calendar
+            // For now, just show the description
+            const calendarHTML = `
+                <p style="color: #666; margin: 2rem 0;">
+                    📅 Activity calendar showing your learning consistency over the past year
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(53, 12px); gap: 2px; margin: 1rem auto; max-width: 680px;">
+                    ${Array.from({length: 365}, (_, i) => {
+                        const intensity = Math.random();
+                        let color = '#ebedf0';
+                        if (intensity > 0.8) color = '#196127';
+                        else if (intensity > 0.6) color = '#239a3b';
+                        else if (intensity > 0.4) color = '#7bc96f';
+                        else if (intensity > 0.2) color = '#c6e48b';
+                        
+                        return `<div style="width: 10px; height: 10px; background: ${color}; border-radius: 2px;" title="Activity on day ${i + 1}"></div>`;
+                    }).join('')}
+                </div>
+                <div style="margin-top: 1rem; color: #666; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span>Less</span>
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #ebedf0; border-radius: 2px;"></span>
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #c6e48b; border-radius: 2px;"></span>
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #7bc96f; border-radius: 2px;"></span>
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #239a3b; border-radius: 2px;"></span>
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #196127; border-radius: 2px;"></span>
+                    <span>More</span>
+                </div>
+            `;
+            
+            calendar.innerHTML = calendarHTML;
+        }
+
+        // Format date
+        function formatDate(date) {
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Show error
+        function showError() {
+            document.getElementById('loading-progress').innerHTML = `
+                <div class="alert alert-error">
+                    <h3>Failed to load progress</h3>
+                    <p>There was an error loading your progress data.</p>
+                    <button onclick="location.reload()" class="btn btn-primary mt-2">Try Again</button>
+                </div>
+            `;
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initProgressPage);
+    </script>
+</body>
+</html>
