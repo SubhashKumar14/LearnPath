@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - A2Z Learning</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">A2Z Learning - Admin</div>
+            <div class="nav-links">
+                <a href="/admin">Admin Dashboard</a>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1 class="text-center mb-3">Admin Dashboard</h1>
+
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-number" id="totalRoadmaps">0</span>
+                <span class="stat-label">Total Roadmaps</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="totalUsers">50</span>
+                <span class="stat-label">Total Users</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="totalTasks">0</span>
+                <span class="stat-label">Total Tasks</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="activeUsers">25</span>
+                <span class="stat-label">Active Users</span>
+            </div>
+        </div>
+
+        <!-- Add New Roadmap -->
+        <div class="admin-form">
+            <h2 class="mb-2">Create New Roadmap</h2>
+            <div id="alert" class="hidden"></div>
+            
+            <form id="roadmapForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label for="title">Roadmap Title</label>
+                        <input type="text" id="title" class="form-control" required placeholder="e.g., DSA Advanced Roadmap">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="difficulty">Difficulty</label>
+                        <select id="difficulty" class="form-control" required>
+                            <option value="">Select Difficulty</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Duration</label>
+                        <input type="text" id="duration" class="form-control" required placeholder="e.g., 45 days">
+                    </div>
+                </div>
+
+                <div id="modulesContainer">
+                    <h3 class="mb-1">Modules</h3>
+                    <div class="module-section">
+                        <div class="form-group">
+                            <label>Module Title</label>
+                            <input type="text" class="form-control module-title" required placeholder="e.g., Step 1: Learn the basics">
+                        </div>
+                        <div class="tasks-container">
+                            <label>Tasks</label>
+                            <div class="task-input">
+                                <input type="text" class="form-control task-title" placeholder="Task title" required>
+                                <select class="form-control task-type">
+                                    <option value="Theory">Theory</option>
+                                    <option value="Problem">Problem</option>
+                                    <option value="Practice">Practice</option>
+                                </select>
+                                <button type="button" onclick="removeTask(this)" class="btn btn-secondary">Remove</button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addTask(this)" class="btn btn-outline">Add Task</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" onclick="addModule()" class="btn btn-outline">Add Module</button>
+                    <button type="submit" class="btn">Create Roadmap</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Existing Roadmaps -->
+        <div class="admin-form">
+            <h2 class="mb-2">Existing Roadmaps</h2>
+            <div id="roadmapsList">
+                <!-- Roadmaps will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let roadmaps = [];
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.classList.remove('hidden');
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('/api/roadmaps');
+                roadmaps = await response.json();
+                
+                updateStats();
+                renderRoadmapsList();
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        }
+
+        function updateStats() {
+            const totalTasks = roadmaps.reduce((sum, roadmap) => 
+                sum + roadmap.modules.reduce((moduleSum, module) => moduleSum + module.tasks.length, 0), 0
+            );
+            
+            document.getElementById('totalRoadmaps').textContent = roadmaps.length;
+            document.getElementById('totalTasks').textContent = totalTasks;
+        }
+
+        function renderRoadmapsList() {
+            const list = document.getElementById('roadmapsList');
+            list.innerHTML = roadmaps.map(roadmap => {
+                const totalTasks = roadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+                return `
+                    <div class="roadmap-card" style="margin-bottom: 1rem;">
+                        <div class="roadmap-title">${roadmap.title}</div>
+                        <div class="roadmap-meta">
+                            <span class="badge badge-${roadmap.difficulty.toLowerCase()}">${roadmap.difficulty}</span>
+                            <span style="color: #666;">${roadmap.duration}</span>
+                            <span style="color: #666;">${roadmap.modules.length} modules, ${totalTasks} tasks</span>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <a href="/roadmap/${roadmap.id}" class="btn btn-outline" style="margin-right: 0.5rem;">View</a>
+                            <button onclick="deleteRoadmap(${roadmap.id})" class="btn btn-secondary">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addModule() {
+            const container = document.getElementById('modulesContainer');
+            const moduleDiv = document.createElement('div');
+            moduleDiv.className = 'module-section';
+            moduleDiv.innerHTML = `
+                <div class="form-group">
+                    <label>Module Title</label>
+                    <input type="text" class="form-control module-title" required placeholder="e.g., Step 2: Sorting Algorithms">
+                </div>
+                <div class="tasks-container">
+                    <label>Tasks</label>
+                    <div class="task-input">
+                        <input type="text" class="form-control task-title" placeholder="Task title" required>
+                        <select class="form-control task-type">
+                            <option value="Theory">Theory</option>
+                            <option value="Problem">Problem</option>
+                            <option value="Practice">Practice</option>
+                        </select>
+                        <button type="button" onclick="removeTask(this)" class="btn btn-secondary">Remove</button>
+                    </div>
+                </div>
+                <button type="button" onclick="addTask(this)" class="btn btn-outline">Add Task</button>
+                <button type="button" onclick="removeModule(this)" class="btn btn-secondary" style="margin-left: 0.5rem;">Remove Module</button>
+            `;
+            container.appendChild(moduleDiv);
+        }
+
+        function removeModule(button) {
+            button.closest('.module-section').remove();
+        }
+
+        function addTask(button) {
+            const tasksContainer = button.previousElementSibling;
+            const taskDiv = document.createElement('div');
+            taskDiv.className = 'task-input';
+            taskDiv.innerHTML = `
+                <input type="text" class="form-control task-title" placeholder="Task title" required>
+                <select class="form-control task-type">
+                    <option value="Theory">Theory</option>
+                    <option value="Problem">Problem</option>
+                    <option value="Practice">Practice</option>
+                </select>
+                <button type="button" onclick="removeTask(this)" class="btn btn-secondary">Remove</button>
+            `;
+            tasksContainer.appendChild(taskDiv);
+        }
+
+        function removeTask(button) {
+            button.closest('.task-input').remove();
+        }
+
+        document.getElementById('roadmapForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const duration = document.getElementById('duration').value;
+            
+            const modules = [];
+            const moduleElements = document.querySelectorAll('.module-section');
+            
+            moduleElements.forEach((moduleEl, moduleIndex) => {
+                const moduleTitle = moduleEl.querySelector('.module-title').value;
+                const tasks = [];
+                
+                const taskElements = moduleEl.querySelectorAll('.task-input');
+                taskElements.forEach((taskEl, taskIndex) => {
+                    const taskTitle = taskEl.querySelector('.task-title').value;
+                    const taskType = taskEl.querySelector('.task-type').value;
+                    
+                    if (taskTitle) {
+                        tasks.push({
+                            title: taskTitle,
+                            type: taskType
+                        });
+                    }
+                });
+                
+                if (moduleTitle && tasks.length > 0) {
+                    modules.push({
+                        title: moduleTitle,
+                        tasks: tasks
+                    });
+                }
+            });
+            
+            if (modules.length === 0) {
+                showAlert('Please add at least one module with tasks', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/roadmaps', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        difficulty,
+                        duration,
+                        modules
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Roadmap created successfully!', 'success');
+                    document.getElementById('roadmapForm').reset();
+                    loadData(); // Reload data
+                } else {
+                    showAlert(data.error || 'Failed to create roadmap', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to create roadmap. Please try again.', 'error');
+            }
+        });
+
+        function deleteRoadmap(id) {
+            if (confirm('Are you sure you want to delete this roadmap?')) {
+                // Mock deletion - in real implementation would call DELETE API
+                roadmaps = roadmaps.filter(r => r.id !== id);
+                renderRoadmapsList();
+                updateStats();
+                showAlert('Roadmap deleted successfully!', 'success');
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        // Load data when page loads
+        loadData();
+    </script>
+</body>
+</html>
