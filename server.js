@@ -1,76 +1,77 @@
 const express = require('express');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const cors = require('cors');
-const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const PORT = 3000;
 
 // Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: 'roadmap-secret',
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
+  saveUninitialized: false
 }));
 
-// MySQL Database Connection
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'roadmap_db'
-});
+// Simple in-memory storage (for demo - replace with MySQL in production)
+let users = [
+  { id: 1, email: 'admin@test.com', password: '$2a$10$9X.6ZBAV9P8B8xJdLLhpqOK9F4M8B1fBQPgJxr8A3Q2X1.xKr9K8G', name: 'Admin', role: 'admin' }, // password: admin123
+  { id: 2, email: 'user@test.com', password: '$2a$10$9X.6ZBAV9P8B8xJdLLhpqOK9F4M8B1fBQPgJxr8A3Q2X1.xKr9K8G', name: 'Test User', role: 'user' } // password: user123
+];
 
-// Connect to database
-db.connect((err) => {
-  if (err) {
-    console.error('Database connection failed:', err);
-    console.log('Creating temporary in-memory storage for demo purposes');
-    // For demo purposes, we'll use temporary arrays to simulate database
-    global.tempUsers = [];
-    global.tempRoadmaps = [];
-    global.tempProgress = [];
-    global.tempCounter = { users: 1, roadmaps: 1, progress: 1 };
-  } else {
-    console.log('Connected to MySQL database');
+let roadmaps = [
+  {
+    id: 1,
+    title: 'DSA Beginner Roadmap',
+    difficulty: 'Beginner',
+    duration: '60 days',
+    modules: [
+      {
+        id: 1,
+        title: 'Step 1: Learn the basics',
+        tasks: [
+          { id: 1, title: 'Things to Know in C++/Java/Python or any language', type: 'Theory', link: '#' },
+          { id: 2, title: 'Build-up Logical Thinking', type: 'Theory', link: '#' },
+          { id: 3, title: 'Learn about Time and Space Complexities', type: 'Theory', link: '#' }
+        ]
+      },
+      {
+        id: 2,
+        title: 'Step 2: Learn Important Sorting Techniques',
+        tasks: [
+          { id: 4, title: 'Selection Sort', type: 'Problem', link: '#' },
+          { id: 5, title: 'Bubble Sort', type: 'Problem', link: '#' },
+          { id: 6, title: 'Insertion Sort', type: 'Problem', link: '#' },
+          { id: 7, title: 'Merge Sort', type: 'Problem', link: '#' },
+          { id: 8, title: 'Quick Sort', type: 'Problem', link: '#' }
+        ]
+      },
+      {
+        id: 3,
+        title: 'Step 3: Solve Problems on Arrays',
+        tasks: [
+          { id: 9, title: 'Largest Element in Array', type: 'Problem', link: '#' },
+          { id: 10, title: 'Second Largest Element in Array', type: 'Problem', link: '#' },
+          { id: 11, title: 'Check if array is sorted', type: 'Problem', link: '#' },
+          { id: 12, title: 'Remove duplicates from Sorted array', type: 'Problem', link: '#' },
+          { id: 13, title: 'Left rotate an array by one place', type: 'Problem', link: '#' }
+        ]
+      }
+    ]
   }
-});
+];
 
-// Authentication middleware
-const authenticate = (req, res, next) => {
-  if (req.session.user) {
-    next();
-  } else {
-    res.redirect('/login');
-  }
-};
-
-const adminOnly = (req, res, next) => {
-  if (req.session.user && req.session.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).send('Admin access required');
-  }
-};
+let userProgress = {}; // { userId: { roadmapId: [completedTaskIds] } }
 
 // Routes
-
-// Home page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Authentication routes
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -79,205 +80,159 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'register.html'));
 });
 
-app.post('/api/register', async (req, res) => {
-  const { name, email, password } = req.body;
+// Authentication
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email);
   
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+  if (user && await bcrypt.compare(password, user.password)) {
+    req.session.userId = user.id;
+    req.session.userRole = user.role;
     
-    // Using temporary storage for demo
-    if (global.tempUsers) {
-      const existingUser = global.tempUsers.find(u => u.email === email);
-      if (existingUser) {
-        return res.status(400).json({ error: 'User already exists' });
-      }
-      
-      const newUser = {
-        id: global.tempCounter.users++,
-        name,
-        email,
-        password: hashedPassword,
-        role: 'user'
-      };
-      
-      global.tempUsers.push(newUser);
-      res.json({ message: 'User registered successfully' });
+    if (user.role === 'admin') {
+      res.json({ redirect: '/admin' });
     } else {
-      // Database query would go here
-      res.json({ message: 'User registered successfully' });
+      res.json({ redirect: '/dashboard' });
     }
-  } catch (error) {
-    res.status(500).json({ error: 'Registration failed' });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
   }
 });
 
-app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
+app.post('/api/register', async (req, res) => {
+  const { name, email, password } = req.body;
   
-  try {
-    let user;
-    
-    if (global.tempUsers) {
-      user = global.tempUsers.find(u => u.email === email);
-    } else {
-      // Database query would go here
-    }
-    
-    if (user && await bcrypt.compare(password, user.password)) {
-      req.session.user = { id: user.id, email: user.email, name: user.name, role: user.role };
-      
-      if (user.role === 'admin') {
-        res.json({ redirect: '/admin-dashboard' });
-      } else {
-        res.json({ redirect: '/user-dashboard' });
-      }
-    } else {
-      res.status(401).json({ error: 'Invalid credentials' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Login failed' });
+  if (users.find(u => u.email === email)) {
+    return res.status(400).json({ error: 'User already exists' });
   }
+  
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = {
+    id: users.length + 1,
+    name,
+    email,
+    password: hashedPassword,
+    role: 'user'
+  };
+  
+  users.push(newUser);
+  res.json({ message: 'User created successfully' });
 });
 
 app.post('/api/logout', (req, res) => {
   req.session.destroy();
-  res.json({ message: 'Logged out successfully' });
+  res.json({ message: 'Logged out' });
 });
 
-// User dashboard routes
-app.get('/user-dashboard', authenticate, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'user-dashboard.html'));
+// Protected routes
+const requireAuth = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+const requireAdmin = (req, res, next) => {
+  if (req.session.userRole !== 'admin') {
+    return res.status(403).send('Admin access required');
+  }
+  next();
+};
+
+app.get('/dashboard', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-app.get('/roadmap/:id', authenticate, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'roadmap-view.html'));
+app.get('/roadmap/:id', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'roadmap.html'));
 });
 
-app.get('/progress', authenticate, (req, res) => {
+app.get('/progress', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'progress.html'));
 });
 
-app.get('/profile', authenticate, (req, res) => {
+app.get('/profile', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-// Admin dashboard routes
-app.get('/admin-dashboard', authenticate, adminOnly, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+app.get('/admin', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/add-roadmap', authenticate, adminOnly, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'add-roadmap.html'));
+// API endpoints
+app.get('/api/user', requireAuth, (req, res) => {
+  const user = users.find(u => u.id === req.session.userId);
+  res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
 });
 
-app.get('/manage-roadmaps', authenticate, adminOnly, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'manage-roadmaps.html'));
-});
-
-// API routes for roadmaps
 app.get('/api/roadmaps', (req, res) => {
-  if (global.tempRoadmaps) {
-    res.json(global.tempRoadmaps);
-  } else {
-    // Database query would go here
-    res.json([]);
-  }
+  res.json(roadmaps);
 });
 
 app.get('/api/roadmap/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  
-  if (global.tempRoadmaps) {
-    const roadmap = global.tempRoadmaps.find(r => r.id === id);
-    if (roadmap) {
-      res.json(roadmap);
-    } else {
-      res.status(404).json({ error: 'Roadmap not found' });
-    }
+  const roadmap = roadmaps.find(r => r.id === parseInt(req.params.id));
+  if (roadmap) {
+    res.json(roadmap);
   } else {
-    // Database query would go here
     res.status(404).json({ error: 'Roadmap not found' });
   }
 });
 
-app.post('/api/roadmaps', authenticate, adminOnly, (req, res) => {
+app.post('/api/progress', requireAuth, (req, res) => {
+  const { roadmapId, taskId, completed } = req.body;
+  const userId = req.session.userId;
+  
+  if (!userProgress[userId]) {
+    userProgress[userId] = {};
+  }
+  
+  if (!userProgress[userId][roadmapId]) {
+    userProgress[userId][roadmapId] = [];
+  }
+  
+  if (completed) {
+    if (!userProgress[userId][roadmapId].includes(taskId)) {
+      userProgress[userId][roadmapId].push(taskId);
+    }
+  } else {
+    userProgress[userId][roadmapId] = userProgress[userId][roadmapId].filter(id => id !== taskId);
+  }
+  
+  res.json({ message: 'Progress updated' });
+});
+
+app.get('/api/progress/:roadmapId', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const roadmapId = parseInt(req.params.roadmapId);
+  
+  const completedTasks = userProgress[userId]?.[roadmapId] || [];
+  res.json(completedTasks);
+});
+
+app.post('/api/roadmaps', requireAuth, requireAdmin, (req, res) => {
   const { title, difficulty, duration, modules } = req.body;
   
   const newRoadmap = {
-    id: global.tempCounter.roadmaps++,
+    id: roadmaps.length + 1,
     title,
     difficulty,
     duration,
-    modules,
-    created_by: req.session.user.id,
-    created_at: new Date()
+    modules: modules.map((module, moduleIndex) => ({
+      id: moduleIndex + 1,
+      title: module.title,
+      tasks: module.tasks.map((task, taskIndex) => ({
+        id: taskIndex + 1,
+        title: task.title,
+        type: task.type || 'Problem',
+        link: task.link || '#'
+      }))
+    }))
   };
   
-  if (global.tempRoadmaps) {
-    global.tempRoadmaps.push(newRoadmap);
-    res.json({ message: 'Roadmap created successfully', roadmap: newRoadmap });
-  } else {
-    // Database query would go here
-    res.json({ message: 'Roadmap created successfully' });
-  }
+  roadmaps.push(newRoadmap);
+  res.json({ message: 'Roadmap created successfully', roadmap: newRoadmap });
 });
 
-// Progress tracking
-app.post('/api/progress', authenticate, (req, res) => {
-  const { roadmap_id, module_id, task_id, completed } = req.body;
-  
-  const progressEntry = {
-    id: global.tempCounter.progress++,
-    user_id: req.session.user.id,
-    roadmap_id,
-    module_id,
-    task_id,
-    completed,
-    updated_at: new Date()
-  };
-  
-  if (global.tempProgress) {
-    // Remove existing progress for this task
-    global.tempProgress = global.tempProgress.filter(p => 
-      !(p.user_id === req.session.user.id && 
-        p.roadmap_id === roadmap_id && 
-        p.module_id === module_id && 
-        p.task_id === task_id)
-    );
-    
-    if (completed) {
-      global.tempProgress.push(progressEntry);
-    }
-    
-    res.json({ message: 'Progress updated successfully' });
-  } else {
-    // Database query would go here
-    res.json({ message: 'Progress updated successfully' });
-  }
-});
-
-app.get('/api/progress/:roadmap_id', authenticate, (req, res) => {
-  const roadmapId = parseInt(req.params.roadmap_id);
-  
-  if (global.tempProgress) {
-    const userProgress = global.tempProgress.filter(p => 
-      p.user_id === req.session.user.id && p.roadmap_id === roadmapId
-    );
-    res.json(userProgress);
-  } else {
-    // Database query would go here
-    res.json([]);
-  }
-});
-
-// Get current user info
-app.get('/api/user', authenticate, (req, res) => {
-  res.json(req.session.user);
-});
-
-// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
-
-module.exports = app;
