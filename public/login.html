@@ -3,240 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - RoadmapLearn</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+    <title>Login - A2Z Learning</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <a href="/" class="logo" style="text-decoration: none; color: white;">
-                    🗺️ RoadmapLearn
-                </a>
-                <nav class="nav-links">
-                    <a href="/" class="btn btn-outline">Home</a>
-                    <a href="/register" class="btn btn-primary">Register</a>
-                </nav>
+        <nav class="nav">
+            <div class="logo">A2Z Learning</div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/register" class="btn btn-outline">Register</a>
             </div>
-        </div>
+        </nav>
     </header>
 
-    <!-- Main Content -->
-    <main class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div class="container">
         <div class="form-container">
-            <div class="text-center mb-4">
-                <h1 style="color: #333; margin-bottom: 0.5rem;">Welcome Back!</h1>
-                <p style="color: #666;">Sign in to continue your learning journey</p>
-            </div>
-
-            <!-- Alert Messages -->
-            <div id="alert-container"></div>
-
-            <!-- Login Form -->
-            <form id="login-form">
+            <h2 class="text-center mb-2">Login to Your Account</h2>
+            
+            <div id="alert" class="hidden"></div>
+            
+            <form id="loginForm">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        class="form-control" 
-                        required 
-                        placeholder="Enter your email"
-                    >
+                    <label for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required>
                 </div>
-
+                
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        class="form-control" 
-                        required 
-                        placeholder="Enter your password"
-                    >
+                    <input type="password" id="password" class="form-control" required>
                 </div>
-
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">
-                        <span id="login-btn-text">Sign In</span>
-                        <div id="login-spinner" class="spinner hidden" style="margin: 0; width: 20px; height: 20px; border-width: 2px;"></div>
-                    </button>
-                </div>
+                
+                <button type="submit" class="btn" style="width: 100%;">Login</button>
             </form>
-
-            <!-- Demo Accounts -->
-            <div class="text-center mt-3">
-                <p style="color: #666; margin-bottom: 1rem;">Demo Accounts:</p>
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                    <button onclick="loginDemo('admin')" class="btn btn-secondary" style="font-size: 0.9rem; padding: 8px 16px;">
-                        Admin Demo
-                    </button>
-                    <button onclick="loginDemo('user')" class="btn btn-secondary" style="font-size: 0.9rem; padding: 8px 16px;">
-                        User Demo
-                    </button>
-                </div>
+            
+            <div class="text-center mt-2">
+                <p>Demo Accounts:</p>
+                <button onclick="fillDemo('admin')" class="btn btn-secondary" style="margin: 0.25rem;">Admin Demo</button>
+                <button onclick="fillDemo('user')" class="btn btn-secondary" style="margin: 0.25rem;">User Demo</button>
             </div>
-
-            <!-- Links -->
-            <div class="text-center mt-4">
-                <p style="color: #666;">
-                    Don't have an account? 
-                    <a href="/register" style="color: #667eea; text-decoration: none; font-weight: 500;">Create one here</a>
-                </p>
-                <p style="color: #666; margin-top: 1rem;">
-                    <a href="#" style="color: #999; text-decoration: none; font-size: 0.9rem;">Forgot your password?</a>
-                </p>
+            
+            <div class="text-center mt-2">
+                <p>Don't have an account? <a href="/register" style="color: #e74c3c;">Register here</a></p>
             </div>
         </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 RoadmapLearn. Empowering learners worldwide.</p>
-        </div>
-    </footer>
+    </div>
 
     <script>
-        // DOM elements
-        const loginForm = document.getElementById('login-form');
-        const alertContainer = document.getElementById('alert-container');
-        const loginBtnText = document.getElementById('login-btn-text');
-        const loginSpinner = document.getElementById('login-spinner');
-
-        // Show alert message
-        function showAlert(message, type = 'error') {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.textContent = message;
-            alertContainer.innerHTML = '';
-            alertContainer.appendChild(alertDiv);
-            
-            // Auto-hide success messages
-            if (type === 'success') {
-                setTimeout(() => {
-                    alertDiv.remove();
-                }, 3000);
-            }
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.classList.remove('hidden');
         }
 
-        // Set loading state
-        function setLoading(isLoading) {
-            if (isLoading) {
-                loginBtnText.textContent = 'Signing in...';
-                loginSpinner.classList.remove('hidden');
-                loginForm.querySelector('button[type="submit"]').disabled = true;
+        function fillDemo(type) {
+            if (type === 'admin') {
+                document.getElementById('email').value = 'admin@test.com';
+                document.getElementById('password').value = 'admin123';
             } else {
-                loginBtnText.textContent = 'Sign In';
-                loginSpinner.classList.add('hidden');
-                loginForm.querySelector('button[type="submit"]').disabled = false;
+                document.getElementById('email').value = 'user@test.com';
+                document.getElementById('password').value = 'user123';
             }
         }
 
-        // Handle form submission
-        loginForm.addEventListener('submit', async (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = new FormData(loginForm);
-            const loginData = {
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-
-            setLoading(true);
-            alertContainer.innerHTML = '';
-
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(loginData)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
                 });
-
-                const result = await response.json();
-
+                
+                const data = await response.json();
+                
                 if (response.ok) {
-                    showAlert('Login successful! Redirecting...', 'success');
-                    setTimeout(() => {
-                        window.location.href = result.redirect;
-                    }, 1000);
+                    window.location.href = data.redirect;
                 } else {
-                    showAlert(result.error || 'Login failed');
+                    showAlert(data.error, 'error');
                 }
             } catch (error) {
-                showAlert('Network error. Please try again.');
-            } finally {
-                setLoading(false);
+                showAlert('Login failed. Please try again.', 'error');
             }
         });
-
-        // Demo login function
-        async function loginDemo(type) {
-            const demoCredentials = {
-                admin: { email: 'admin@roadmaplearn.com', password: 'admin123' },
-                user: { email: 'user@roadmaplearn.com', password: 'user123' }
-            };
-
-            // Create demo accounts if they don't exist
-            await createDemoAccount(type, demoCredentials[type]);
-
-            // Fill form with demo credentials
-            document.getElementById('email').value = demoCredentials[type].email;
-            document.getElementById('password').value = demoCredentials[type].password;
-
-            // Auto-submit form
-            loginForm.dispatchEvent(new Event('submit'));
-        }
-
-        // Create demo account if it doesn't exist
-        async function createDemoAccount(type, credentials) {
-            try {
-                const registerData = {
-                    name: type === 'admin' ? 'Admin User' : 'Demo User',
-                    email: credentials.email,
-                    password: credentials.password
-                };
-
-                await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(registerData)
-                });
-            } catch (error) {
-                // Account might already exist, that's okay
-            }
-        }
-
-        // Auto-focus email field
-        document.getElementById('email').focus();
-
-        // Check if user is already logged in
-        fetch('/api/user')
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Not logged in');
-            })
-            .then(user => {
-                // User is already logged in, redirect to appropriate dashboard
-                if (user.role === 'admin') {
-                    window.location.href = '/admin-dashboard';
-                } else {
-                    window.location.href = '/user-dashboard';
-                }
-            })
-            .catch(() => {
-                // User not logged in, stay on login page
-            });
     </script>
 </body>
 </html>
