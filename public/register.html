@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - RoadmapLearn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo" style="text-decoration: none; color: white;">
+                    🗺️ RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/" class="btn btn-outline">Home</a>
+                    <a href="/login" class="btn btn-primary">Login</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
+        <div class="form-container">
+            <div class="text-center mb-4">
+                <h1 style="color: #333; margin-bottom: 0.5rem;">Join RoadmapLearn</h1>
+                <p style="color: #666;">Start your structured learning journey today</p>
+            </div>
+
+            <!-- Alert Messages -->
+            <div id="alert-container"></div>
+
+            <!-- Registration Form -->
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        class="form-control" 
+                        required 
+                        placeholder="Enter your full name"
+                        minlength="2"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control" 
+                        required 
+                        placeholder="Enter your email address"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-control" 
+                        required 
+                        placeholder="Create a password"
+                        minlength="6"
+                    >
+                    <small style="color: #666; font-size: 0.85rem; margin-top: 0.25rem; display: block;">
+                        Password must be at least 6 characters long
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        id="confirm-password" 
+                        name="confirmPassword" 
+                        class="form-control" 
+                        required 
+                        placeholder="Confirm your password"
+                    >
+                    <div id="password-match-indicator" class="mt-1"></div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <span style="font-size: 0.9rem; color: #666;">
+                            I agree to the <a href="#" style="color: #667eea;">Terms of Service</a> and 
+                            <a href="#" style="color: #667eea;">Privacy Policy</a>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <span id="register-btn-text">Create Account</span>
+                        <div id="register-spinner" class="spinner hidden" style="margin: 0; width: 20px; height: 20px; border-width: 2px;"></div>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Features Preview -->
+            <div class="mt-4" style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
+                <p style="color: #666; text-align: center; margin-bottom: 1rem; font-weight: 500;">
+                    What you'll get with your free account:
+                </p>
+                <div style="display: grid; gap: 0.75rem; font-size: 0.9rem; color: #666;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #28a745;">✓</span>
+                        Access to all learning roadmaps
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #28a745;">✓</span>
+                        Personal progress tracking
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #28a745;">✓</span>
+                        Achievement system and milestones
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #28a745;">✓</span>
+                        Community support and discussions
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links -->
+            <div class="text-center mt-4">
+                <p style="color: #666;">
+                    Already have an account? 
+                    <a href="/login" style="color: #667eea; text-decoration: none; font-weight: 500;">Sign in here</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Empowering learners worldwide.</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM elements
+        const registerForm = document.getElementById('register-form');
+        const alertContainer = document.getElementById('alert-container');
+        const registerBtnText = document.getElementById('register-btn-text');
+        const registerSpinner = document.getElementById('register-spinner');
+        const passwordField = document.getElementById('password');
+        const confirmPasswordField = document.getElementById('confirm-password');
+        const passwordMatchIndicator = document.getElementById('password-match-indicator');
+
+        // Show alert message
+        function showAlert(message, type = 'error') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 3000);
+            }
+        }
+
+        // Set loading state
+        function setLoading(isLoading) {
+            if (isLoading) {
+                registerBtnText.textContent = 'Creating account...';
+                registerSpinner.classList.remove('hidden');
+                registerForm.querySelector('button[type="submit"]').disabled = true;
+            } else {
+                registerBtnText.textContent = 'Create Account';
+                registerSpinner.classList.add('hidden');
+                registerForm.querySelector('button[type="submit"]').disabled = false;
+            }
+        }
+
+        // Password match validation
+        function checkPasswordMatch() {
+            const password = passwordField.value;
+            const confirmPassword = confirmPasswordField.value;
+            
+            if (confirmPassword.length === 0) {
+                passwordMatchIndicator.innerHTML = '';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                passwordMatchIndicator.innerHTML = '<small style="color: #28a745;">✓ Passwords match</small>';
+                return true;
+            } else {
+                passwordMatchIndicator.innerHTML = '<small style="color: #dc3545;">✗ Passwords do not match</small>';
+                return false;
+            }
+        }
+
+        // Add password match event listeners
+        confirmPasswordField.addEventListener('input', checkPasswordMatch);
+        passwordField.addEventListener('input', checkPasswordMatch);
+
+        // Form validation
+        function validateForm() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = passwordField.value;
+            const confirmPassword = confirmPasswordField.value;
+            const termsAccepted = document.getElementById('terms').checked;
+
+            if (name.length < 2) {
+                showAlert('Name must be at least 2 characters long');
+                return false;
+            }
+
+            if (!email.includes('@') || !email.includes('.')) {
+                showAlert('Please enter a valid email address');
+                return false;
+            }
+
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long');
+                return false;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match');
+                return false;
+            }
+
+            if (!termsAccepted) {
+                showAlert('Please accept the Terms of Service and Privacy Policy');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Handle form submission
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+
+            const formData = new FormData(registerForm);
+            const registerData = {
+                name: formData.get('name').trim(),
+                email: formData.get('email').trim(),
+                password: formData.get('password')
+            };
+
+            setLoading(true);
+            alertContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(registerData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Account created successfully! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    showAlert(result.error || 'Registration failed');
+                }
+            } catch (error) {
+                showAlert('Network error. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Auto-focus name field
+        document.getElementById('name').focus();
+
+        // Check if user is already logged in
+        fetch('/api/user')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Not logged in');
+            })
+            .then(user => {
+                // User is already logged in, redirect to appropriate dashboard
+                if (user.role === 'admin') {
+                    window.location.href = '/admin-dashboard';
+                } else {
+                    window.location.href = '/user-dashboard';
+                }
+            })
+            .catch(() => {
+                // User not logged in, stay on register page
+            });
+
+        // Real-time form validation styling
+        const inputs = registerForm.querySelectorAll('.form-control');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.checkValidity()) {
+                    this.style.borderColor = '#28a745';
+                } else {
+                    this.style.borderColor = '#dc3545';
+                }
+            });
+
+            input.addEventListener('focus', function() {
+                this.style.borderColor = '#667eea';
+            });
+        });
+    </script>
+</body>
+</html>
