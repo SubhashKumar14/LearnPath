@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - RoadmapLearn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/user-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🗺️ RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/user-dashboard" class="btn btn-outline">Dashboard</a>
+                    <a href="/progress" class="btn btn-outline">My Progress</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Page Header -->
+        <section class="text-center mb-4">
+            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: bold;" id="avatar">
+                <!-- User initial will be inserted here -->
+            </div>
+            <h1 id="user-name" style="color: #333; margin-bottom: 0.5rem;">Loading...</h1>
+            <p id="user-email" style="color: #666; font-size: 1.1rem;">Loading...</p>
+            <p style="color: #666; font-size: 0.9rem;">Member since <span id="member-since">2024</span></p>
+        </section>
+
+        <!-- Profile Stats -->
+        <section class="stats-grid mb-4">
+            <div class="stat-card">
+                <span class="stat-number" id="roadmaps-following">0</span>
+                <span class="stat-label">Roadmaps Following</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="tasks-completed">0</span>
+                <span class="stat-label">Tasks Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="current-streak">0</span>
+                <span class="stat-label">Day Streak</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="completion-rate">0%</span>
+                <span class="stat-label">Completion Rate</span>
+            </div>
+        </section>
+
+        <!-- Profile Management -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+            <!-- Edit Profile -->
+            <div class="card">
+                <h2 class="card-title">Edit Profile</h2>
+                <div class="card-content">
+                    <div id="profile-alert"></div>
+                    
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label for="edit-name">Full Name</label>
+                            <input 
+                                type="text" 
+                                id="edit-name" 
+                                name="name" 
+                                class="form-control" 
+                                required 
+                                minlength="2"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-email">Email Address</label>
+                            <input 
+                                type="email" 
+                                id="edit-email" 
+                                name="email" 
+                                class="form-control" 
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <span id="save-btn-text">Save Changes</span>
+                                <div id="save-spinner" class="spinner hidden" style="margin: 0; width: 20px; height: 20px; border-width: 2px;"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="card">
+                <h2 class="card-title">Change Password</h2>
+                <div class="card-content">
+                    <div id="password-alert"></div>
+                    
+                    <form id="password-form">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <input 
+                                type="password" 
+                                id="current-password" 
+                                name="currentPassword" 
+                                class="form-control" 
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <input 
+                                type="password" 
+                                id="new-password" 
+                                name="newPassword" 
+                                class="form-control" 
+                                required 
+                                minlength="6"
+                            >
+                            <small style="color: #666; font-size: 0.85rem; margin-top: 0.25rem; display: block;">
+                                Password must be at least 6 characters long
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm-new-password">Confirm New Password</label>
+                            <input 
+                                type="password" 
+                                id="confirm-new-password" 
+                                name="confirmPassword" 
+                                class="form-control" 
+                                required
+                            >
+                            <div id="password-match-indicator" class="mt-1"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <span id="password-btn-text">Change Password</span>
+                                <div id="password-spinner" class="spinner hidden" style="margin: 0; width: 20px; height: 20px; border-width: 2px;"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Preferences -->
+        <div class="card mb-4">
+            <h2 class="card-title">Learning Preferences</h2>
+            <div class="card-content">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                    <div>
+                        <h4 style="margin-bottom: 1rem; color: #333;">Preferred Difficulty Level</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="difficulty" value="beginner" checked>
+                                <span class="difficulty-badge difficulty-beginner">Beginner</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="difficulty" value="intermediate">
+                                <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="difficulty" value="advanced">
+                                <span class="difficulty-badge difficulty-advanced">Advanced</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 1rem; color: #333;">Learning Goals</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" value="career-change">
+                                <span>Career Change</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" value="skill-improvement">
+                                <span>Skill Improvement</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" value="interview-prep">
+                                <span>Interview Preparation</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" value="personal-growth">
+                                <span>Personal Growth</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button onclick="savePreferences()" class="btn btn-secondary">Save Preferences</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="card">
+            <h2 class="card-title">Account Actions</h2>
+            <div class="card-content">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                    <button onclick="exportData()" class="btn btn-secondary">
+                        📥 Export My Data
+                    </button>
+                    <button onclick="resetAllProgress()" class="btn btn-danger">
+                        🔄 Reset All Progress
+                    </button>
+                    <button onclick="deleteAccount()" class="btn btn-danger">
+                        🗑️ Delete Account
+                    </button>
+                </div>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 1rem;">
+                    <strong>Note:</strong> Deleting your account will permanently remove all your data and progress. This action cannot be undone.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Empowering learners worldwide.</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentUser = null;
+        let userStats = {};
+
+        // Initialize profile page
+        async function initProfilePage() {
+            try {
+                // Get current user
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                currentUser = await userResponse.json();
+
+                // Load user stats and render profile
+                await loadUserStats();
+                renderProfile();
+                setupEventListeners();
+            } catch (error) {
+                console.error('Failed to initialize profile page:', error);
+                showAlert('Failed to load profile data', 'error', 'profile-alert');
+            }
+        }
+
+        // Load user statistics
+        async function loadUserStats() {
+            try {
+                // This would normally come from API
+                // For now, calculate from available data
+                userStats = {
+                    roadmapsFollowing: Math.floor(Math.random() * 5) + 1,
+                    tasksCompleted: Math.floor(Math.random() * 50) + 10,
+                    currentStreak: Math.floor(Math.random() * 15) + 1,
+                    completionRate: Math.floor(Math.random() * 60) + 40
+                };
+            } catch (error) {
+                console.error('Failed to load user stats:', error);
+            }
+        }
+
+        // Render profile information
+        function renderProfile() {
+            // Update user info
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('user-email').textContent = currentUser.email;
+            document.getElementById('avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+
+            // Update stats
+            document.getElementById('roadmaps-following').textContent = userStats.roadmapsFollowing;
+            document.getElementById('tasks-completed').textContent = userStats.tasksCompleted;
+            document.getElementById('current-streak').textContent = userStats.currentStreak;
+            document.getElementById('completion-rate').textContent = `${userStats.completionRate}%`;
+
+            // Populate form fields
+            document.getElementById('edit-name').value = currentUser.name;
+            document.getElementById('edit-email').value = currentUser.email;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Profile form
+            document.getElementById('profile-form').addEventListener('submit', handleProfileUpdate);
+            
+            // Password form
+            document.getElementById('password-form').addEventListener('submit', handlePasswordChange);
+            
+            // Password match validation
+            const newPasswordField = document.getElementById('new-password');
+            const confirmPasswordField = document.getElementById('confirm-new-password');
+            const passwordMatchIndicator = document.getElementById('password-match-indicator');
+
+            function checkPasswordMatch() {
+                const newPassword = newPasswordField.value;
+                const confirmPassword = confirmPasswordField.value;
+                
+                if (confirmPassword.length === 0) {
+                    passwordMatchIndicator.innerHTML = '';
+                    return;
+                }
+                
+                if (newPassword === confirmPassword) {
+                    passwordMatchIndicator.innerHTML = '<small style="color: #28a745;">✓ Passwords match</small>';
+                    return true;
+                } else {
+                    passwordMatchIndicator.innerHTML = '<small style="color: #dc3545;">✗ Passwords do not match</small>';
+                    return false;
+                }
+            }
+
+            confirmPasswordField.addEventListener('input', checkPasswordMatch);
+            newPasswordField.addEventListener('input', checkPasswordMatch);
+        }
+
+        // Handle profile update
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const profileData = {
+                name: formData.get('name').trim(),
+                email: formData.get('email').trim()
+            };
+
+            if (profileData.name.length < 2) {
+                showAlert('Name must be at least 2 characters long', 'error', 'profile-alert');
+                return;
+            }
+
+            setLoading(true, 'save');
+
+            try {
+                // Mock API call - would normally update user profile
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Update current user data
+                currentUser.name = profileData.name;
+                currentUser.email = profileData.email;
+                
+                // Re-render profile
+                renderProfile();
+                
+                showAlert('Profile updated successfully!', 'success', 'profile-alert');
+            } catch (error) {
+                console.error('Failed to update profile:', error);
+                showAlert('Failed to update profile. Please try again.', 'error', 'profile-alert');
+            } finally {
+                setLoading(false, 'save');
+            }
+        }
+
+        // Handle password change
+        async function handlePasswordChange(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const passwordData = {
+                currentPassword: formData.get('currentPassword'),
+                newPassword: formData.get('newPassword'),
+                confirmPassword: formData.get('confirmPassword')
+            };
+
+            if (passwordData.newPassword.length < 6) {
+                showAlert('New password must be at least 6 characters long', 'error', 'password-alert');
+                return;
+            }
+
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                showAlert('Passwords do not match', 'error', 'password-alert');
+                return;
+            }
+
+            setLoading(true, 'password');
+
+            try {
+                // Mock API call - would normally change password
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Clear form
+                document.getElementById('password-form').reset();
+                document.getElementById('password-match-indicator').innerHTML = '';
+                
+                showAlert('Password changed successfully!', 'success', 'password-alert');
+            } catch (error) {
+                console.error('Failed to change password:', error);
+                showAlert('Failed to change password. Please try again.', 'error', 'password-alert');
+            } finally {
+                setLoading(false, 'password');
+            }
+        }
+
+        // Save preferences
+        function savePreferences() {
+            const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const goals = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+            
+            // Mock save - would normally send to API
+            console.log('Saving preferences:', { difficulty, goals });
+            
+            showAlert('Preferences saved successfully!', 'success', 'profile-alert');
+        }
+
+        // Export user data
+        function exportData() {
+            const userData = {
+                profile: currentUser,
+                stats: userStats,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(userData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `roadmaplearn-data-${currentUser.name.replace(/\s+/g, '-').toLowerCase()}.json`;
+            link.click();
+            
+            showAlert('Data exported successfully!', 'success', 'profile-alert');
+        }
+
+        // Reset all progress
+        function resetAllProgress() {
+            if (!confirm('Are you sure you want to reset ALL your progress? This action cannot be undone.')) {
+                return;
+            }
+            
+            if (!confirm('This will delete all your completed tasks and progress across all roadmaps. Are you absolutely sure?')) {
+                return;
+            }
+            
+            // Mock reset - would normally call API
+            showAlert('All progress has been reset.', 'info', 'profile-alert');
+        }
+
+        // Delete account
+        function deleteAccount() {
+            if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                return;
+            }
+            
+            const confirmText = prompt('Type "DELETE" to confirm account deletion:');
+            if (confirmText !== 'DELETE') {
+                showAlert('Account deletion cancelled.', 'info', 'profile-alert');
+                return;
+            }
+            
+            // Mock delete - would normally call API and redirect
+            alert('Account deletion is not implemented in this demo.');
+        }
+
+        // Set loading state
+        function setLoading(isLoading, type) {
+            if (type === 'save') {
+                const btnText = document.getElementById('save-btn-text');
+                const spinner = document.getElementById('save-spinner');
+                const button = document.querySelector('#profile-form button[type="submit"]');
+                
+                if (isLoading) {
+                    btnText.textContent = 'Saving...';
+                    spinner.classList.remove('hidden');
+                    button.disabled = true;
+                } else {
+                    btnText.textContent = 'Save Changes';
+                    spinner.classList.add('hidden');
+                    button.disabled = false;
+                }
+            } else if (type === 'password') {
+                const btnText = document.getElementById('password-btn-text');
+                const spinner = document.getElementById('password-spinner');
+                const button = document.querySelector('#password-form button[type="submit"]');
+                
+                if (isLoading) {
+                    btnText.textContent = 'Changing...';
+                    spinner.classList.remove('hidden');
+                    button.disabled = true;
+                } else {
+                    btnText.textContent = 'Change Password';
+                    spinner.classList.add('hidden');
+                    button.disabled = false;
+                }
+            }
+        }
+
+        // Show alert message
+        function showAlert(message, type, containerId) {
+            const container = document.getElementById(containerId);
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initProfilePage);
+    </script>
+</body>
+</html>
