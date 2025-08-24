@@ -1,249 +1,174 @@
-<<<<<<< HEAD
-# 🗺️ RoadmapLearn - Learning Path Management Platform
+# A2Z Learning Platform
 
-A comprehensive roadmap management website where administrators can create structured learning paths and users can follow them to track their progress.
+A simple roadmap management website similar to Striver's A2Z DSA Course Sheet. Built with HTML, CSS, JavaScript, Express.js, and MySQL.
 
-## 🎯 Project Overview
+## 🎯 Features
 
-**RoadmapLearn** is a web-based platform designed to facilitate structured learning through expertly crafted roadmaps. The platform supports two main user roles:
+### User Features
+- **Browse Roadmaps**: View structured learning paths with step-by-step modules
+- **Track Progress**: Mark tasks as completed and see progress bars
+- **Filter Content**: Filter roadmaps by difficulty level
+- **Progress Dashboard**: View overall learning statistics
+- **Profile Management**: Update personal information and change password
 
-- **Administrators**: Create, manage, and organize learning roadmaps with modules and tasks
-- **Users**: Browse, follow, and track progress through available roadmaps
+### Admin Features
+- **Create Roadmaps**: Add new learning paths with modules and tasks
+- **Manage Content**: View and delete existing roadmaps
+- **Dashboard**: Monitor platform statistics
 
-## ✨ Core Features
-
-### 👨‍���� Admin Features
-- **Admin Dashboard**: Overview of platform statistics and recent activity
-- **Roadmap Creation**: Interactive form to create roadmaps with modules and tasks
-- **Roadmap Management**: View, edit, delete, and manage all roadmaps
-- **Bulk Operations**: Publish, unpublish, or delete multiple roadmaps
-- **Export/Import**: Backup and restore roadmap data
-- **User Management**: Monitor platform activity and user engagement
-
-### 👥 User Features
-- **User Dashboard**: Browse available roadmaps with filtering options
-- **Roadmap View**: Interactive roadmap display in Striver A2Z format
-- **Progress Tracking**: Mark tasks as completed and track learning progress
-- **Progress Analytics**: Visual progress indicators and completion statistics
-- **Activity Calendar**: GitHub-style contribution calendar (coming soon)
-- **Profile Management**: Update personal information and preferences
-
-### 🔐 Authentication System
-- **Secure Registration/Login**: User account creation and authentication
-- **Role-based Access**: Different interfaces for admins and users
-- **Session Management**: Secure session handling and logout
-- **Demo Accounts**: Pre-configured admin and user accounts for testing
-
-## 🛠️ Technical Architecture
-
-### Frontend
-- **HTML5**: Semantic markup with modern web standards
-- **CSS3**: Custom styling with responsive design and CSS Grid/Flexbox
-- **Vanilla JavaScript**: Interactive functionality without framework dependencies
-- **Responsive Design**: Mobile-first approach with breakpoints for all devices
-
-### Backend
-- **Node.js**: Server-side JavaScript runtime
-- **Express.js**: Web application framework for routing and middleware
-- **MySQL**: Primary database (with in-memory fallback for demo)
-- **bcryptjs**: Password hashing and security
-- **express-session**: Session management
-- **CORS**: Cross-origin resource sharing support
-
-### Data Structure
-```
-Roadmaps
-├── Basic Info (title, difficulty, duration, description)
-├── Modules
-│   ├── Module Info (title, description)
-│   └── Tasks
-│       └── Task Info (title, description, type)
-└── Progress Tracking (user_id, roadmap_id, module_id, task_id, completed)
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn package manager
-- MySQL (optional - will use in-memory storage if not available)
-
-### Installation
-
-1. **Clone the repository** (or start from the current project)
-```bash
-git clone <repository-url>
-cd roadmap-management-website
-```
-
-2. **Install dependencies**
-```bash
-npm install
-```
-
-3. **Start the development server**
-```bash
-npm run dev
-```
-
-4. **Access the application**
-   - Open your browser and navigate to `http://localhost:3000`
-   - The application will automatically fall back to in-memory storage if MySQL is not configured
+## 🚀 Quick Start
 
 ### Demo Accounts
+- **Admin**: `admin@test.com` / `admin123`
+- **User**: `user@test.com` / `user123`
 
-The application includes demo accounts for quick testing:
+### Installation
+1. Install dependencies: `npm install`
+2. Start server: `npm run dev`
+3. Visit: `http://localhost:3001`
 
-**Admin Account:**
-- Email: `admin@roadmaplearn.com`
-- Password: `admin123`
+## 📱 Pages Structure
 
-**User Account:**
-- Email: `user@roadmaplearn.com`
-- Password: `user123`
+### Public Pages
+- **Home** (`/`) - Landing page with sample roadmap preview
+- **Login** (`/login`) - User authentication
+- **Register** (`/register`) - Account creation
 
-## 📱 User Interface Overview
+### User Pages
+- **Dashboard** (`/dashboard`) - Browse available roadmaps
+- **Roadmap View** (`/roadmap/:id`) - Interactive A2Z format display
+- **Progress** (`/progress`) - Track learning statistics
+- **Profile** (`/profile`) - Manage account settings
 
-### 🏠 Landing Page
-- Welcome message and platform introduction
-- Sample roadmaps preview
-- Registration and login options
-- Feature highlights and benefits
-
-### 👨‍💼 Admin Interface
-- **Admin Dashboard**: Platform statistics and quick actions
-- **Add Roadmap**: Dynamic form with module and task management
-- **Manage Roadmaps**: Table view with filtering, sorting, and bulk operations
-- **Real-time Preview**: Instant roadmap preview during creation
-
-### 👥 User Interface
-- **User Dashboard**: Roadmap browsing with filters and search
-- **Roadmap View**: Interactive modules with expandable task lists
-- **Progress Page**: Comprehensive progress tracking and analytics
-- **Profile Page**: Personal information and learning preferences
+### Admin Pages
+- **Admin Dashboard** (`/admin`) - Create and manage roadmaps
 
 ## 🎨 Design Features
 
-### Visual Design
-- **Modern UI**: Clean, professional interface with consistent styling
-- **Color Scheme**: Purple gradient theme with accessibility considerations
-- **Typography**: Clear, readable fonts with proper hierarchy
-- **Icons**: Emoji-based icons for universal recognition
-- **Animations**: Smooth transitions and hover effects
+- **A2Z Format**: Step-by-step module layout similar to Striver's course
+- **Clean UI**: Simple, beginner-friendly design
+- **Responsive**: Works on desktop and mobile devices
+- **Progress Tracking**: Visual progress bars and completion percentages
+- **Interactive Tasks**: Checkbox-based task completion
 
-### User Experience
-- **Intuitive Navigation**: Clear menu structure and breadcrumbs
-- **Responsive Layout**: Optimized for desktop, tablet, and mobile
-- **Loading States**: Visual feedback during data loading
-- **Error Handling**: User-friendly error messages and recovery options
-- **Progress Indicators**: Visual progress bars and completion percentages
+## 📊 Sample Roadmap
 
-## 🔧 Configuration
+The platform includes a pre-loaded "DSA Beginner Roadmap" with:
 
-### Environment Variables
-```bash
-# Database Configuration (optional)
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=roadmap_db
+- **Step 1: Learn the basics**
+  - Things to Know in Programming Languages
+  - Build-up Logical Thinking
+  - Time and Space Complexities
 
-# Security
-JWT_SECRET=your_secret_key
+- **Step 2: Learn Important Sorting Techniques**
+  - Selection Sort, Bubble Sort, Insertion Sort
+  - Merge Sort, Quick Sort
 
-# Server Configuration
-PORT=3000
+- **Step 3: Solve Problems on Arrays**
+  - Largest Element, Second Largest Element
+  - Check if array is sorted
+  - Remove duplicates, Array rotation
+
+## 🛠️ Tech Stack
+
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Backend**: Express.js (Node.js)
+- **Database**: In-memory storage (easily replaceable with MySQL)
+- **Authentication**: bcryptjs with express-session
+- **Styling**: Custom CSS with responsive design
+
+## 📝 Code Structure
+
+```
+├── server.js          # Express server with API routes
+├── public/
+│   ├── style.css      # Main stylesheet
+│   ├── index.html     # Landing page
+│   ├── login.html     # Login page
+│   ├── register.html  # Registration page
+│   ├── dashboard.html # User dashboard
+│   ├── roadmap.html   # Roadmap viewer (A2Z format)
+│   ├── progress.html  # Progress tracking
+│   ├── profile.html   # User profile
+│   └── admin.html     # Admin panel
+└── package.json       # Dependencies
 ```
 
-### Database Setup (Optional)
-If you want to use MySQL instead of in-memory storage:
+## 🔧 API Endpoints
 
-1. Create a MySQL database named `roadmap_db`
-2. Set the environment variables above
-3. The application will automatically create the necessary tables
+### Authentication
+- `POST /api/login` - User login
+- `POST /api/register` - User registration
+- `POST /api/logout` - User logout
+- `GET /api/user` - Get current user info
 
-## 📊 Sample Data
+### Roadmaps
+- `GET /api/roadmaps` - Get all roadmaps
+- `GET /api/roadmap/:id` - Get specific roadmap
+- `POST /api/roadmaps` - Create new roadmap (admin only)
 
-The application includes rich sample data:
+### Progress
+- `GET /api/progress/:roadmapId` - Get user progress for roadmap
+- `POST /api/progress` - Update task completion
 
-### Sample Roadmaps
-1. **Data Structures & Algorithms** (Beginner, 60 days)
-   - Arrays and Strings
-   - Linked Lists
-   - Stacks and Queues
+## 💾 Data Structure
 
-2. **Full Stack Web Development** (Intermediate, 90 days)
-   - Frontend Fundamentals
-   - React Development
+### Roadmap Structure
+```javascript
+{
+  id: 1,
+  title: "DSA Beginner Roadmap",
+  difficulty: "Beginner",
+  duration: "60 days",
+  modules: [
+    {
+      id: 1,
+      title: "Step 1: Learn the basics",
+      tasks: [
+        {
+          id: 1,
+          title: "Things to Know in Programming",
+          type: "Theory",
+          link: "#"
+        }
+      ]
+    }
+  ]
+}
+```
 
-3. **Machine Learning Basics** (Advanced, 120 days)
-   - Python for ML
+### Progress Structure
+```javascript
+userProgress = {
+  userId: {
+    roadmapId: [completedTaskIds]
+  }
+}
+```
 
-Each roadmap includes detailed tasks with descriptions and learning objectives.
+## 🎓 Learning Path Format
 
-## 🛡️ Security Features
+Following Striver's A2Z DSA Course structure:
+- **Modules** are organized as "Steps" (Step 1, Step 2, etc.)
+- **Tasks** include Theory, Problems, and Practice exercises
+- **Progress** is tracked per individual task
+- **Visual indicators** show completion status
 
-- **Password Hashing**: Secure bcrypt password storage
-- **Session Security**: HTTP-only session cookies
-- **Input Validation**: Client and server-side validation
-- **SQL Injection Protection**: Parameterized queries (when using database)
-- **XSS Protection**: Input sanitization and output encoding
-- **Role-based Access Control**: Admin vs user permissions
+## 🔒 Security Features
 
-## 📈 Future Enhancements
+- Password hashing with bcryptjs
+- Session-based authentication
+- Role-based access control (admin/user)
+- Input validation on forms
+- Protected API routes
 
-### Planned Features
-- **Real Database Integration**: Full MySQL schema implementation
-- **User Management**: Admin interface for user moderation
-- **Advanced Analytics**: Detailed learning analytics and reports
-- **Notification System**: Email and in-app notifications
-- **Discussion Forums**: Community features and peer interaction
-- **Content Management**: Rich text editor for roadmap content
-- **API Integration**: RESTful API for mobile app development
+## 📱 Responsive Design
 
-### Potential Integrations
-- **External Learning Platforms**: Link to Coursera, Udemy, etc.
-- **Code Execution**: Integrated coding environment
-- **Video Streaming**: Embedded video content
-- **Assessment Tools**: Quizzes and certification system
-- **Social Features**: User profiles and achievement sharing
-
-## 🤝 Contributing
-
-This project follows standard web development practices:
-
-1. **Code Style**: Consistent formatting and naming conventions
-2. **Documentation**: Clear comments and documentation
-3. **Testing**: Comprehensive testing for all features
-4. **Security**: Regular security audits and updates
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 🆘 Support
-
-For support and questions:
-- Check the documentation above
-- Review the sample implementations
-- Test with the provided demo accounts
-- Examine the code structure and comments
-
-## 🎉 Acknowledgments
-
-Built with modern web technologies and best practices for educational content management. Special thanks to the open-source community for the tools and libraries that made this project possible.
+- Mobile-first CSS approach
+- Flexible grid layouts
+- Touch-friendly interactive elements
+- Optimized for all screen sizes
 
 ---
 
-**Happy Learning! 🚀**
-
-> This platform is designed to make structured learning accessible and engaging for everyone. Whether you're an educator creating content or a learner following a path, RoadmapLearn provides the tools you need to succeed.
-=======
-# StudyNavigator
-
-This repository was initialized by Builder.io.
-
-## Getting Started
-
-Welcome to your new repository! You can now start building your project.
->>>>>>> refs/remotes/origin/main
+**Built for structured learning with simplicity and effectiveness in mind!** 🚀
