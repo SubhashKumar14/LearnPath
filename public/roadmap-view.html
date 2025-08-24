@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap - RoadmapLearn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/user-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🗺️ RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/user-dashboard" class="btn btn-outline">Dashboard</a>
+                    <a href="/progress" class="btn btn-outline">My Progress</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center">
+            <div class="spinner"></div>
+            <p>Loading roadmap...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="hidden text-center">
+            <div class="alert alert-error">
+                <h3>Roadmap not found</h3>
+                <p>The roadmap you're looking for doesn't exist or you don't have permission to view it.</p>
+                <a href="/user-dashboard" class="btn btn-primary mt-2">Back to Dashboard</a>
+            </div>
+        </div>
+
+        <!-- Roadmap Content -->
+        <div id="roadmap-content" class="hidden">
+            <!-- Roadmap Header -->
+            <div class="roadmap-header">
+                <h1 id="roadmap-title" class="roadmap-title"></h1>
+                <div class="roadmap-meta">
+                    <div class="meta-item">
+                        <span id="difficulty-badge" class="difficulty-badge"></span>
+                    </div>
+                    <div class="meta-item">
+                        ⏱️ <span id="roadmap-duration"></span>
+                    </div>
+                    <div class="meta-item">
+                        📚 <span id="module-count"></span> modules
+                    </div>
+                    <div class="meta-item">
+                        ✅ <span id="task-count"></span> tasks
+                    </div>
+                </div>
+                
+                <!-- Overall Progress -->
+                <div class="progress-container mt-3">
+                    <div class="progress-bar">
+                        <div id="overall-progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="overall-progress-text" class="progress-text">0/0 tasks completed (0%)</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center mb-4">
+                <button onclick="toggleAllModules()" class="btn btn-secondary" id="toggle-all-btn">
+                    Expand All Modules
+                </button>
+                <button onclick="resetProgress()" class="btn btn-danger" id="reset-progress-btn">
+                    Reset Progress
+                </button>
+            </div>
+
+            <!-- Modules -->
+            <div id="modules-container"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Empowering learners worldwide.</p>
+        </div>
+    </footer>
+
+    <script>
+        let roadmapData = null;
+        let userProgress = [];
+        let currentUser = null;
+        let allModulesExpanded = false;
+
+        // Get roadmap ID from URL
+        const roadmapId = parseInt(window.location.pathname.split('/').pop());
+
+        // Initialize roadmap view
+        async function initRoadmapView() {
+            try {
+                // Get current user
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                currentUser = await userResponse.json();
+
+                // Load roadmap data and user progress
+                await Promise.all([loadRoadmap(), loadUserProgress()]);
+                renderRoadmap();
+            } catch (error) {
+                console.error('Failed to initialize roadmap view:', error);
+                showError();
+            }
+        }
+
+        // Load roadmap data
+        async function loadRoadmap() {
+            try {
+                const response = await fetch(`/api/roadmap/${roadmapId}`);
+                if (response.ok) {
+                    roadmapData = await response.json();
+                } else if (response.status === 404) {
+                    // Create sample roadmap if not found
+                    roadmapData = getSampleRoadmap(roadmapId);
+                    if (!roadmapData) {
+                        throw new Error('Roadmap not found');
+                    }
+                } else {
+                    throw new Error('Failed to load roadmap');
+                }
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // Load user progress
+        async function loadUserProgress() {
+            try {
+                const response = await fetch(`/api/progress/${roadmapId}`);
+                if (response.ok) {
+                    userProgress = await response.json();
+                } else {
+                    userProgress = [];
+                }
+            } catch (error) {
+                console.error('Failed to load user progress:', error);
+                userProgress = [];
+            }
+        }
+
+        // Get sample roadmap data
+        function getSampleRoadmap(id) {
+            const sampleRoadmaps = {
+                1: {
+                    id: 1,
+                    title: "Data Structures & Algorithms",
+                    difficulty: "beginner",
+                    duration: "60 days",
+                    modules: [
+                        {
+                            id: 1,
+                            title: "Arrays and Strings",
+                            tasks: [
+                                { 
+                                    id: 1, 
+                                    title: "Two Sum Problem", 
+                                    description: "Find two numbers in an array that add up to a target sum. Learn about array traversal and hash maps for O(n) solution." 
+                                },
+                                { 
+                                    id: 2, 
+                                    title: "Valid Anagram", 
+                                    description: "Check if two strings are anagrams. Practice string manipulation and character counting techniques." 
+                                },
+                                { 
+                                    id: 3, 
+                                    title: "Contains Duplicate", 
+                                    description: "Determine if an array contains duplicate values. Learn hash set usage for duplicate detection." 
+                                },
+                                { 
+                                    id: 4, 
+                                    title: "Valid Palindrome", 
+                                    description: "Check if a string is a palindrome. Practice two-pointer technique and string preprocessing." 
+                                }
+                            ]
+                        },
+                        {
+                            id: 2,
+                            title: "Linked Lists",
+                            tasks: [
+                                { 
+                                    id: 5, 
+                                    title: "Reverse Linked List", 
+                                    description: "Reverse a singly linked list iteratively and recursively. Master pointer manipulation." 
+                                },
+                                { 
+                                    id: 6, 
+                                    title: "Merge Two Sorted Lists", 
+                                    description: "Merge two sorted linked lists into one. Understand merging algorithms and edge cases." 
+                                },
+                                { 
+                                    id: 7, 
+                                    title: "Linked List Cycle", 
+                                    description: "Detect if a linked list has a cycle. Learn Floyd's cycle detection algorithm." 
+                                }
+                            ]
+                        },
+                        {
+                            id: 3,
+                            title: "Stacks and Queues",
+                            tasks: [
+                                { 
+                                    id: 8, 
+                                    title: "Valid Parentheses", 
+                                    description: "Check if parentheses are balanced using a stack. Practice stack operations." 
+                                },
+                                { 
+                                    id: 9, 
+                                    title: "Implement Queue using Stacks", 
+                                    description: "Build a queue data structure using only stacks. Understand FIFO vs LIFO." 
+                                }
+                            ]
+                        }
+                    ]
+                },
+                2: {
+                    id: 2,
+                    title: "Full Stack Web Development",
+                    difficulty: "intermediate",
+                    duration: "90 days",
+                    modules: [
+                        {
+                            id: 4,
+                            title: "Frontend Fundamentals",
+                            tasks: [
+                                { id: 10, title: "HTML5 Semantics", description: "Learn modern HTML structure, semantic elements, and accessibility best practices." },
+                                { id: 11, title: "CSS Grid & Flexbox", description: "Master advanced CSS layout techniques for responsive design." },
+                                { id: 12, title: "JavaScript ES6+", description: "Modern JavaScript features: arrow functions, destructuring, promises, async/await." }
+                            ]
+                        },
+                        {
+                            id: 5,
+                            title: "React Development",
+                            tasks: [
+                                { id: 13, title: "Components and JSX", description: "Learn React fundamentals, component creation, and JSX syntax." },
+                                { id: 14, title: "State Management", description: "Understand React hooks, state handling, and component lifecycle." },
+                                { id: 15, title: "React Router", description: "Implement client-side routing for single-page applications." }
+                            ]
+                        }
+                    ]
+                },
+                3: {
+                    id: 3,
+                    title: "Machine Learning Basics",
+                    difficulty: "advanced",
+                    duration: "120 days",
+                    modules: [
+                        {
+                            id: 6,
+                            title: "Python for ML",
+                            tasks: [
+                                { id: 16, title: "NumPy Arrays", description: "Numerical computing with Python: arrays, operations, and broadcasting." },
+                                { id: 17, title: "Pandas DataFrames", description: "Data manipulation and analysis with pandas library." }
+                            ]
+                        }
+                    ]
+                }
+            };
+            return sampleRoadmaps[id] || null;
+        }
+
+        // Render roadmap
+        function renderRoadmap() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('roadmap-content').classList.remove('hidden');
+
+            // Update header
+            document.getElementById('roadmap-title').textContent = roadmapData.title;
+            document.getElementById('roadmap-duration').textContent = roadmapData.duration;
+            
+            const difficultyBadge = document.getElementById('difficulty-badge');
+            difficultyBadge.textContent = roadmapData.difficulty;
+            difficultyBadge.className = `difficulty-badge difficulty-${roadmapData.difficulty}`;
+            
+            document.getElementById('module-count').textContent = roadmapData.modules.length;
+            
+            const totalTasks = roadmapData.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+            document.getElementById('task-count').textContent = totalTasks;
+
+            // Update progress
+            updateOverallProgress();
+
+            // Render modules
+            renderModules();
+
+            // Update page title
+            document.title = `${roadmapData.title} - RoadmapLearn`;
+        }
+
+        // Update overall progress
+        function updateOverallProgress() {
+            const totalTasks = roadmapData.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+            const completedTasks = userProgress.length;
+            const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            document.getElementById('overall-progress-fill').style.width = `${progressPercentage}%`;
+            document.getElementById('overall-progress-text').textContent = 
+                `${completedTasks}/${totalTasks} tasks completed (${progressPercentage}%)`;
+        }
+
+        // Render modules
+        function renderModules() {
+            const container = document.getElementById('modules-container');
+            
+            container.innerHTML = roadmapData.modules.map(module => {
+                const completedTasksInModule = userProgress.filter(p => p.module_id === module.id).length;
+                const totalTasksInModule = module.tasks.length;
+                const moduleProgressPercentage = totalTasksInModule > 0 ? 
+                    Math.round((completedTasksInModule / totalTasksInModule) * 100) : 0;
+
+                return `
+                    <div class="module">
+                        <div class="module-header" onclick="toggleModule(${module.id})">
+                            <h3 class="module-title">${module.title}</h3>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="font-size: 0.9rem; opacity: 0.9;">
+                                    ${completedTasksInModule}/${totalTasksInModule} (${moduleProgressPercentage}%)
+                                </span>
+                                <span class="module-toggle" id="toggle-${module.id}">▼</span>
+                            </div>
+                        </div>
+                        <div class="module-content" id="content-${module.id}">
+                            <div class="progress-container mb-3">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${moduleProgressPercentage}%"></div>
+                                </div>
+                                <div class="progress-text">${completedTasksInModule}/${totalTasksInModule} tasks completed</div>
+                            </div>
+                            <ul class="task-list">
+                                ${module.tasks.map(task => {
+                                    const isCompleted = userProgress.some(p => 
+                                        p.module_id === module.id && p.task_id === task.id
+                                    );
+                                    return `
+                                        <li class="task-item ${isCompleted ? 'task-completed' : ''}">
+                                            <input 
+                                                type="checkbox" 
+                                                class="task-checkbox" 
+                                                ${isCompleted ? 'checked' : ''}
+                                                onchange="toggleTaskCompletion(${module.id}, ${task.id}, this.checked)"
+                                                id="task-${module.id}-${task.id}"
+                                            >
+                                            <div class="task-content">
+                                                <div class="task-title">${task.title}</div>
+                                                <div class="task-description">${task.description}</div>
+                                            </div>
+                                        </li>
+                                    `;
+                                }).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle module expansion
+        function toggleModule(moduleId) {
+            const content = document.getElementById(`content-${moduleId}`);
+            const toggle = document.getElementById(`toggle-${moduleId}`);
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('expanded');
+                toggle.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // Toggle all modules
+        function toggleAllModules() {
+            allModulesExpanded = !allModulesExpanded;
+            const btn = document.getElementById('toggle-all-btn');
+            
+            roadmapData.modules.forEach(module => {
+                const content = document.getElementById(`content-${module.id}`);
+                const toggle = document.getElementById(`toggle-${module.id}`);
+                
+                if (allModulesExpanded) {
+                    content.classList.add('expanded');
+                    toggle.style.transform = 'rotate(180deg)';
+                } else {
+                    content.classList.remove('expanded');
+                    toggle.style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            btn.textContent = allModulesExpanded ? 'Collapse All Modules' : 'Expand All Modules';
+        }
+
+        // Toggle task completion
+        async function toggleTaskCompletion(moduleId, taskId, completed) {
+            try {
+                const response = await fetch('/api/progress', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        roadmap_id: roadmapId,
+                        module_id: moduleId,
+                        task_id: taskId,
+                        completed: completed
+                    })
+                });
+
+                if (response.ok) {
+                    // Update local progress data
+                    if (completed) {
+                        if (!userProgress.some(p => p.module_id === moduleId && p.task_id === taskId)) {
+                            userProgress.push({
+                                roadmap_id: roadmapId,
+                                module_id: moduleId,
+                                task_id: taskId,
+                                completed: true
+                            });
+                        }
+                    } else {
+                        userProgress = userProgress.filter(p => 
+                            !(p.module_id === moduleId && p.task_id === taskId)
+                        );
+                    }
+
+                    // Update UI
+                    const taskItem = document.getElementById(`task-${moduleId}-${taskId}`).closest('.task-item');
+                    if (completed) {
+                        taskItem.classList.add('task-completed');
+                    } else {
+                        taskItem.classList.remove('task-completed');
+                    }
+
+                    updateOverallProgress();
+                    renderModules(); // Re-render to update module progress
+                } else {
+                    throw new Error('Failed to update progress');
+                }
+            } catch (error) {
+                console.error('Failed to update task completion:', error);
+                // Revert checkbox state
+                document.getElementById(`task-${moduleId}-${taskId}`).checked = !completed;
+                alert('Failed to update progress. Please try again.');
+            }
+        }
+
+        // Reset progress
+        async function resetProgress() {
+            if (!confirm('Are you sure you want to reset all progress for this roadmap? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                // Reset all tasks
+                for (const progress of userProgress) {
+                    await fetch('/api/progress', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            roadmap_id: roadmapId,
+                            module_id: progress.module_id,
+                            task_id: progress.task_id,
+                            completed: false
+                        })
+                    });
+                }
+
+                // Clear local progress
+                userProgress = [];
+                
+                // Re-render
+                updateOverallProgress();
+                renderModules();
+                
+                alert('Progress reset successfully!');
+            } catch (error) {
+                console.error('Failed to reset progress:', error);
+                alert('Failed to reset progress. Please try again.');
+            }
+        }
+
+        // Show error
+        function showError() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initRoadmapView);
+    </script>
+</body>
+</html>
