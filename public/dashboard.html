@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - A2Z Learning</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">A2Z Learning</div>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/progress">Progress</a>
+                <a href="/profile">Profile</a>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="hero" style="margin-bottom: 2rem;">
+            <h1 id="welcomeMessage">Welcome Back!</h1>
+            <p>Continue your learning journey with structured roadmaps</p>
+        </div>
+
+        <div class="stats" id="statsSection">
+            <div class="stat-card">
+                <span class="stat-number" id="totalRoadmaps">0</span>
+                <span class="stat-label">Available Roadmaps</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="completedTasks">0</span>
+                <span class="stat-label">Tasks Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="overallProgress">0%</span>
+                <span class="stat-label">Overall Progress</span>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>Available Roadmaps</h2>
+            <div>
+                <select id="difficultyFilter" class="form-control" style="width: auto; display: inline-block;">
+                    <option value="">All Difficulties</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="roadmap-grid" id="roadmapGrid">
+            <!-- Roadmaps will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let roadmaps = [];
+        let userProgress = {};
+
+        async function loadData() {
+            try {
+                // Get current user
+                const userResponse = await fetch('/api/user');
+                currentUser = await userResponse.json();
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${currentUser.name}!`;
+
+                // Get roadmaps
+                const roadmapsResponse = await fetch('/api/roadmaps');
+                roadmaps = await roadmapsResponse.json();
+
+                // Get progress for each roadmap
+                for (const roadmap of roadmaps) {
+                    const progressResponse = await fetch(`/api/progress/${roadmap.id}`);
+                    userProgress[roadmap.id] = await progressResponse.json();
+                }
+
+                updateStats();
+                renderRoadmaps();
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalRoadmaps').textContent = roadmaps.length;
+            
+            const totalCompleted = Object.values(userProgress).flat().length;
+            document.getElementById('completedTasks').textContent = totalCompleted;
+            
+            const totalTasks = roadmaps.reduce((sum, roadmap) => 
+                sum + roadmap.modules.reduce((moduleSum, module) => moduleSum + module.tasks.length, 0), 0
+            );
+            const progressPercentage = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+            document.getElementById('overallProgress').textContent = `${progressPercentage}%`;
+        }
+
+        function renderRoadmaps() {
+            const filter = document.getElementById('difficultyFilter').value;
+            const filteredRoadmaps = filter ? roadmaps.filter(r => r.difficulty === filter) : roadmaps;
+            
+            const grid = document.getElementById('roadmapGrid');
+            grid.innerHTML = filteredRoadmaps.map(roadmap => {
+                const totalTasks = roadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+                const completedTasks = userProgress[roadmap.id]?.length || 0;
+                const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                
+                return `
+                    <div class="roadmap-card">
+                        <div class="roadmap-title">${roadmap.title}</div>
+                        <div class="roadmap-meta">
+                            <span class="badge badge-${roadmap.difficulty.toLowerCase()}">${roadmap.difficulty}</span>
+                            <span style="color: #666;">${roadmap.duration}</span>
+                        </div>
+                        <p style="color: #666; margin-bottom: 1rem;">
+                            ${roadmap.modules.length} modules • ${totalTasks} tasks
+                        </p>
+                        ${progressPercentage > 0 ? `
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                            </div>
+                            <div class="progress-text">${completedTasks}/${totalTasks} tasks completed</div>
+                        ` : ''}
+                        <a href="/roadmap/${roadmap.id}" class="btn" style="margin-top: 1rem; width: 100%;">
+                            ${progressPercentage > 0 ? 'Continue' : 'Start'} Learning
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        document.getElementById('difficultyFilter').addEventListener('change', renderRoadmaps);
+        
+        // Load data when page loads
+        loadData();
+    </script>
+</body>
+</html>
