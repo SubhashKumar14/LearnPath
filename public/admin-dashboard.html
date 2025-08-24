@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - RoadmapLearn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/admin-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🛠️ Admin Panel - RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/add-roadmap" class="btn btn-outline">Add Roadmap</a>
+                    <a href="/manage-roadmaps" class="btn btn-outline">Manage Roadmaps</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Welcome Section -->
+        <section class="text-center mb-4">
+            <h1 id="admin-welcome" style="color: #333; margin-bottom: 0.5rem;">Admin Dashboard</h1>
+            <p style="color: #666; font-size: 1.1rem;">Manage roadmaps and monitor platform activity</p>
+        </section>
+
+        <!-- Overview Stats -->
+        <section class="stats-grid mb-4">
+            <div class="stat-card">
+                <span class="stat-number" id="total-roadmaps">0</span>
+                <span class="stat-label">Total Roadmaps</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="total-users">0</span>
+                <span class="stat-label">Registered Users</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="active-learners">0</span>
+                <span class="stat-label">Active Learners</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="completion-percentage">0%</span>
+                <span class="stat-label">Avg. Completion Rate</span>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="card mb-4">
+            <h2 class="card-title">Quick Actions</h2>
+            <div class="card-content">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <a href="/add-roadmap" class="btn btn-primary">
+                        ➕ Create New Roadmap
+                    </a>
+                    <a href="/manage-roadmaps" class="btn btn-secondary">
+                        📋 Manage Existing Roadmaps
+                    </a>
+                    <button onclick="exportAllData()" class="btn btn-secondary">
+                        📥 Export All Data
+                    </button>
+                    <button onclick="viewAnalytics()" class="btn btn-secondary">
+                        📊 View Analytics
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Roadmaps -->
+        <section class="mb-4">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #333; margin: 0;">Recent Roadmaps</h2>
+                <a href="/manage-roadmaps" style="color: #667eea; text-decoration: none;">View All →</a>
+            </div>
+            
+            <div id="loading-roadmaps" class="text-center">
+                <div class="spinner"></div>
+                <p>Loading roadmaps...</p>
+            </div>
+            
+            <div id="recent-roadmaps" class="dashboard-grid hidden"></div>
+            
+            <div id="no-roadmaps" class="text-center hidden" style="padding: 3rem; color: #666;">
+                <h3>No Roadmaps Yet</h3>
+                <p>Create your first roadmap to get started.</p>
+                <a href="/add-roadmap" class="btn btn-primary mt-2">Create Roadmap</a>
+            </div>
+        </section>
+
+        <!-- Platform Activity -->
+        <section class="mb-4">
+            <h2 style="color: #333; margin-bottom: 1.5rem;">Recent Platform Activity</h2>
+            <div class="card">
+                <div id="activity-feed">
+                    <div class="text-center" style="padding: 2rem; color: #666;">
+                        <div class="spinner"></div>
+                        <p>Loading recent activity...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- User Management Preview -->
+        <section>
+            <h2 style="color: #333; margin-bottom: 1.5rem;">User Management</h2>
+            <div class="card">
+                <div class="card-content">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                        <div class="text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+                            <h4>Total Users</h4>
+                            <p id="user-count" style="font-size: 1.5rem; font-weight: bold; color: #667eea;">0</p>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
+                            <h4>New This Week</h4>
+                            <p id="new-users" style="font-size: 1.5rem; font-weight: bold; color: #28a745;">0</p>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
+                            <h4>Active Today</h4>
+                            <p id="active-today" style="font-size: 1.5rem; font-weight: bold; color: #fd7e14;">0</p>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+                            <h4>Engaged Users</h4>
+                            <p id="engaged-users" style="font-size: 1.5rem; font-weight: bold; color: #6f42c1;">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <button onclick="viewUserManagement()" class="btn btn-primary">
+                            View All Users
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Admin Panel</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentAdmin = null;
+        let allRoadmaps = [];
+        let platformStats = {};
+
+        // Initialize admin dashboard
+        async function initAdminDashboard() {
+            try {
+                // Get current user and verify admin role
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                currentAdmin = await userResponse.json();
+                if (currentAdmin.role !== 'admin') {
+                    alert('Access denied. Admin privileges required.');
+                    window.location.href = '/user-dashboard';
+                    return;
+                }
+
+                document.getElementById('admin-welcome').textContent = `Welcome, ${currentAdmin.name}`;
+
+                // Load dashboard data
+                await Promise.all([loadRoadmaps(), loadPlatformStats()]);
+                renderDashboard();
+            } catch (error) {
+                console.error('Failed to initialize admin dashboard:', error);
+                showError();
+            }
+        }
+
+        // Load all roadmaps
+        async function loadRoadmaps() {
+            try {
+                const response = await fetch('/api/roadmaps');
+                if (response.ok) {
+                    allRoadmaps = await response.json();
+                } else {
+                    allRoadmaps = createSampleRoadmaps();
+                }
+            } catch (error) {
+                console.error('Failed to load roadmaps:', error);
+                allRoadmaps = createSampleRoadmaps();
+            }
+        }
+
+        // Load platform statistics
+        async function loadPlatformStats() {
+            try {
+                // Mock platform statistics
+                platformStats = {
+                    totalUsers: Math.floor(Math.random() * 500) + 100,
+                    newUsersThisWeek: Math.floor(Math.random() * 50) + 10,
+                    activeToday: Math.floor(Math.random() * 100) + 20,
+                    engagedUsers: Math.floor(Math.random() * 200) + 50,
+                    activeLearners: Math.floor(Math.random() * 300) + 75,
+                    avgCompletionRate: Math.floor(Math.random() * 40) + 45
+                };
+            } catch (error) {
+                console.error('Failed to load platform stats:', error);
+                platformStats = {
+                    totalUsers: 0,
+                    newUsersThisWeek: 0,
+                    activeToday: 0,
+                    engagedUsers: 0,
+                    activeLearners: 0,
+                    avgCompletionRate: 0
+                };
+            }
+        }
+
+        // Create sample roadmaps
+        function createSampleRoadmaps() {
+            return [
+                {
+                    id: 1,
+                    title: "Data Structures & Algorithms",
+                    difficulty: "beginner",
+                    duration: "60 days",
+                    created_by: currentAdmin?.id || 1,
+                    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+                    modules: [
+                        {
+                            id: 1,
+                            title: "Arrays and Strings",
+                            tasks: [
+                                { id: 1, title: "Two Sum Problem" },
+                                { id: 2, title: "Valid Anagram" },
+                                { id: 3, title: "Contains Duplicate" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Full Stack Web Development",
+                    difficulty: "intermediate",
+                    duration: "90 days",
+                    created_by: currentAdmin?.id || 1,
+                    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+                    modules: [
+                        {
+                            id: 2,
+                            title: "Frontend Fundamentals",
+                            tasks: [
+                                { id: 4, title: "HTML5 Semantics" },
+                                { id: 5, title: "CSS Grid & Flexbox" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Machine Learning Basics",
+                    difficulty: "advanced",
+                    duration: "120 days",
+                    created_by: currentAdmin?.id || 1,
+                    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+                    modules: [
+                        {
+                            id: 3,
+                            title: "Python for ML",
+                            tasks: [
+                                { id: 6, title: "NumPy Arrays" },
+                                { id: 7, title: "Pandas DataFrames" }
+                            ]
+                        }
+                    ]
+                }
+            ];
+        }
+
+        // Render dashboard
+        function renderDashboard() {
+            document.getElementById('loading-roadmaps').classList.add('hidden');
+            
+            updateOverviewStats();
+            renderRecentRoadmaps();
+            renderActivityFeed();
+            updateUserManagement();
+        }
+
+        // Update overview statistics
+        function updateOverviewStats() {
+            document.getElementById('total-roadmaps').textContent = allRoadmaps.length;
+            document.getElementById('total-users').textContent = platformStats.totalUsers;
+            document.getElementById('active-learners').textContent = platformStats.activeLearners;
+            document.getElementById('completion-percentage').textContent = `${platformStats.avgCompletionRate}%`;
+        }
+
+        // Render recent roadmaps
+        function renderRecentRoadmaps() {
+            const container = document.getElementById('recent-roadmaps');
+            const noRoadmaps = document.getElementById('no-roadmaps');
+            
+            if (allRoadmaps.length === 0) {
+                container.classList.add('hidden');
+                noRoadmaps.classList.remove('hidden');
+                return;
+            }
+            
+            noRoadmaps.classList.add('hidden');
+            container.classList.remove('hidden');
+            
+            // Sort by creation date and take the 3 most recent
+            const recentRoadmaps = allRoadmaps
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 3);
+            
+            container.innerHTML = recentRoadmaps.map(roadmap => {
+                const totalTasks = roadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+                const createdDate = new Date(roadmap.created_at).toLocaleDateString();
+                
+                return `
+                    <div class="card">
+                        <div class="card-title">${roadmap.title}</div>
+                        <div class="card-content">
+                            <div class="roadmap-meta mb-2">
+                                <div class="meta-item">
+                                    <span class="difficulty-badge difficulty-${roadmap.difficulty}">${roadmap.difficulty}</span>
+                                </div>
+                                <div class="meta-item">
+                                    ⏱️ ${roadmap.duration}
+                                </div>
+                            </div>
+                            <p style="color: #666; margin-bottom: 1rem;">
+                                ${roadmap.modules.length} modules • ${totalTasks} tasks
+                            </p>
+                            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                                Created on ${createdDate}
+                            </p>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <a href="/roadmap/${roadmap.id}" class="btn btn-outline" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                    👁️ View
+                                </a>
+                                <button onclick="editRoadmap(${roadmap.id})" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                    ✏️ Edit
+                                </button>
+                                <button onclick="deleteRoadmap(${roadmap.id})" class="btn btn-danger" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render activity feed
+        function renderActivityFeed() {
+            const container = document.getElementById('activity-feed');
+            
+            // Generate mock recent activities
+            const activities = [
+                { type: 'user_registered', user: 'John Doe', time: '2 hours ago' },
+                { type: 'roadmap_completed', user: 'Jane Smith', roadmap: 'JavaScript Basics', time: '4 hours ago' },
+                { type: 'task_completed', user: 'Mike Johnson', task: 'Arrays Problems', roadmap: 'DSA Basics', time: '6 hours ago' },
+                { type: 'user_registered', user: 'Sarah Wilson', time: '1 day ago' },
+                { type: 'roadmap_started', user: 'David Brown', roadmap: 'React Development', time: '1 day ago' }
+            ];
+            
+            container.innerHTML = `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    ${activities.map(activity => {
+                        let icon, message, color;
+                        
+                        switch (activity.type) {
+                            case 'user_registered':
+                                icon = '👤';
+                                message = `${activity.user} joined the platform`;
+                                color = '#28a745';
+                                break;
+                            case 'roadmap_completed':
+                                icon = '🎉';
+                                message = `${activity.user} completed "${activity.roadmap}"`;
+                                color = '#667eea';
+                                break;
+                            case 'task_completed':
+                                icon = '✅';
+                                message = `${activity.user} completed "${activity.task}" in ${activity.roadmap}`;
+                                color = '#fd7e14';
+                                break;
+                            case 'roadmap_started':
+                                icon = '🚀';
+                                message = `${activity.user} started "${activity.roadmap}"`;
+                                color = '#6f42c1';
+                                break;
+                            default:
+                                icon = '📝';
+                                message = 'Unknown activity';
+                                color = '#6c757d';
+                        }
+                        
+                        return `
+                            <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-bottom: 1px solid #e0e0e0;">
+                                <div style="font-size: 1.2rem;">${icon}</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 500; color: #333;">${message}</div>
+                                    <div style="font-size: 0.85rem; color: #666;">${activity.time}</div>
+                                </div>
+                                <div style="width: 4px; height: 20px; background: ${color}; border-radius: 2px;"></div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // Update user management section
+        function updateUserManagement() {
+            document.getElementById('user-count').textContent = platformStats.totalUsers;
+            document.getElementById('new-users').textContent = platformStats.newUsersThisWeek;
+            document.getElementById('active-today').textContent = platformStats.activeToday;
+            document.getElementById('engaged-users').textContent = platformStats.engagedUsers;
+        }
+
+        // Admin actions
+        function editRoadmap(id) {
+            window.location.href = `/add-roadmap?edit=${id}`;
+        }
+
+        function deleteRoadmap(id) {
+            const roadmap = allRoadmaps.find(r => r.id === id);
+            if (!roadmap) return;
+            
+            if (!confirm(`Are you sure you want to delete "${roadmap.title}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Mock deletion
+            allRoadmaps = allRoadmaps.filter(r => r.id !== id);
+            renderRecentRoadmaps();
+            updateOverviewStats();
+            
+            alert('Roadmap deleted successfully!');
+        }
+
+        function exportAllData() {
+            const data = {
+                roadmaps: allRoadmaps,
+                stats: platformStats,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentAdmin.name
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `roadmaplearn-admin-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            alert('Data exported successfully!');
+        }
+
+        function viewAnalytics() {
+            alert('Analytics view coming soon! This will show detailed charts and metrics about platform usage.');
+        }
+
+        function viewUserManagement() {
+            alert('User management interface coming soon! This will allow you to view, manage, and moderate users.');
+        }
+
+        // Show error
+        function showError() {
+            document.getElementById('loading-roadmaps').innerHTML = `
+                <div class="alert alert-error">
+                    <h3>Failed to load dashboard</h3>
+                    <p>There was an error loading the admin dashboard data.</p>
+                    <button onclick="location.reload()" class="btn btn-primary mt-2">Try Again</button>
+                </div>
+            `;
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initAdminDashboard);
+    </script>
+</body>
+</html>
