@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Roadmaps - RoadmapLearn Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/admin-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🛠️ Admin Panel - RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/admin-dashboard" class="btn btn-outline">Dashboard</a>
+                    <a href="/add-roadmap" class="btn btn-outline">Add Roadmap</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Page Header -->
+        <section class="text-center mb-4">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">Manage Roadmaps</h1>
+            <p style="color: #666; font-size: 1.1rem;">View, edit, and manage all roadmaps in the system</p>
+        </section>
+
+        <!-- Statistics -->
+        <section class="stats-grid mb-4">
+            <div class="stat-card">
+                <span class="stat-number" id="total-roadmaps">0</span>
+                <span class="stat-label">Total Roadmaps</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="published-roadmaps">0</span>
+                <span class="stat-label">Published</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="total-modules">0</span>
+                <span class="stat-label">Total Modules</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="total-tasks">0</span>
+                <span class="stat-label">Total Tasks</span>
+            </div>
+        </section>
+
+        <!-- Actions and Filters -->
+        <section class="card mb-4">
+            <h2 class="card-title">Roadmap Management</h2>
+            <div class="card-content">
+                <!-- Actions -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <a href="/add-roadmap" class="btn btn-primary">
+                        ➕ Create New Roadmap
+                    </a>
+                    <button onclick="exportRoadmaps()" class="btn btn-secondary">
+                        📥 Export All Roadmaps
+                    </button>
+                    <button onclick="bulkAction()" class="btn btn-secondary">
+                        📋 Bulk Actions
+                    </button>
+                    <button onclick="importRoadmaps()" class="btn btn-outline">
+                        📤 Import Roadmaps
+                    </button>
+                </div>
+                
+                <!-- Filters -->
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <label for="difficulty-filter" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Filter by Difficulty</label>
+                        <select id="difficulty-filter" class="form-control" style="width: auto; min-width: 150px;">
+                            <option value="">All Difficulties</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="status-filter" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Filter by Status</label>
+                        <select id="status-filter" class="form-control" style="width: auto; min-width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="search-filter" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Search</label>
+                        <input 
+                            type="text" 
+                            id="search-filter" 
+                            class="form-control" 
+                            placeholder="Search roadmaps..." 
+                            style="width: auto; min-width: 200px;"
+                        >
+                    </div>
+                    <div style="align-self: end;">
+                        <button onclick="clearFilters()" class="btn btn-outline">Clear Filters</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Roadmaps Table -->
+        <section>
+            <div id="loading-roadmaps" class="text-center">
+                <div class="spinner"></div>
+                <p>Loading roadmaps...</p>
+            </div>
+            
+            <div id="roadmaps-content" class="hidden">
+                <div class="card">
+                    <div class="card-content" style="padding: 0;">
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="background: #f8f9fa;">
+                                    <tr>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0;">
+                                            <input type="checkbox" id="select-all" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0; cursor: pointer;" onclick="sortTable('title')">
+                                            Title ↕️
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0; cursor: pointer;" onclick="sortTable('difficulty')">
+                                            Difficulty ↕️
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0; cursor: pointer;" onclick="sortTable('duration')">
+                                            Duration ↕️
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0;">
+                                            Modules/Tasks
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0; cursor: pointer;" onclick="sortTable('created_at')">
+                                            Created ↕️
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0;">
+                                            Status
+                                        </th>
+                                        <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e0e0e0;">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roadmaps-table-body">
+                                    <!-- Table rows will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="no-roadmaps" class="text-center hidden" style="padding: 3rem; color: #666;">
+                <h3>No Roadmaps Found</h3>
+                <p>No roadmaps match your current filters, or no roadmaps exist yet.</p>
+                <a href="/add-roadmap" class="btn btn-primary mt-2">Create Your First Roadmap</a>
+            </div>
+        </section>
+
+        <!-- Pagination -->
+        <section id="pagination" class="text-center mt-4 hidden">
+            <div style="display: inline-flex; gap: 0.5rem; align-items: center;">
+                <button onclick="changePage(-1)" class="btn btn-outline" id="prev-btn">← Previous</button>
+                <span id="page-info" style="padding: 0 1rem; color: #666;">Page 1 of 1</span>
+                <button onclick="changePage(1)" class="btn btn-outline" id="next-btn">Next →</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Admin Panel</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentAdmin = null;
+        let allRoadmaps = [];
+        let filteredRoadmaps = [];
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let sortField = 'created_at';
+        let sortDirection = 'desc';
+
+        // Initialize manage roadmaps page
+        async function initManageRoadmapsPage() {
+            try {
+                // Get current user and verify admin role
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                currentAdmin = await userResponse.json();
+                if (currentAdmin.role !== 'admin') {
+                    alert('Access denied. Admin privileges required.');
+                    window.location.href = '/user-dashboard';
+                    return;
+                }
+
+                // Load roadmaps
+                await loadRoadmaps();
+                setupEventListeners();
+                renderRoadmaps();
+            } catch (error) {
+                console.error('Failed to initialize manage roadmaps page:', error);
+                showError();
+            }
+        }
+
+        // Load all roadmaps
+        async function loadRoadmaps() {
+            try {
+                const response = await fetch('/api/roadmaps');
+                if (response.ok) {
+                    allRoadmaps = await response.json();
+                } else {
+                    allRoadmaps = createSampleRoadmaps();
+                }
+                
+                // Add mock status and additional data
+                allRoadmaps = allRoadmaps.map((roadmap, index) => ({
+                    ...roadmap,
+                    status: index % 3 === 0 ? 'draft' : 'published',
+                    created_at: roadmap.created_at || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+                    created_by_name: 'Admin User'
+                }));
+                
+                filteredRoadmaps = [...allRoadmaps];
+            } catch (error) {
+                console.error('Failed to load roadmaps:', error);
+                allRoadmaps = createSampleRoadmaps();
+                filteredRoadmaps = [...allRoadmaps];
+            }
+        }
+
+        // Create sample roadmaps (same as other pages)
+        function createSampleRoadmaps() {
+            return [
+                {
+                    id: 1,
+                    title: "Data Structures & Algorithms",
+                    difficulty: "beginner",
+                    duration: "60 days",
+                    modules: [
+                        {
+                            id: 1,
+                            title: "Arrays and Strings",
+                            tasks: [
+                                { id: 1, title: "Two Sum Problem" },
+                                { id: 2, title: "Valid Anagram" },
+                                { id: 3, title: "Contains Duplicate" }
+                            ]
+                        },
+                        {
+                            id: 2,
+                            title: "Linked Lists",
+                            tasks: [
+                                { id: 4, title: "Reverse Linked List" },
+                                { id: 5, title: "Merge Two Sorted Lists" }
+                            ]
+                        }
+                    ],
+                    status: 'published',
+                    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    created_by_name: 'Admin User'
+                },
+                {
+                    id: 2,
+                    title: "Full Stack Web Development",
+                    difficulty: "intermediate",
+                    duration: "90 days",
+                    modules: [
+                        {
+                            id: 3,
+                            title: "Frontend Fundamentals",
+                            tasks: [
+                                { id: 6, title: "HTML5 Semantics" },
+                                { id: 7, title: "CSS Grid & Flexbox" },
+                                { id: 8, title: "JavaScript ES6+" }
+                            ]
+                        }
+                    ],
+                    status: 'published',
+                    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+                    created_by_name: 'Admin User'
+                },
+                {
+                    id: 3,
+                    title: "Machine Learning Basics",
+                    difficulty: "advanced",
+                    duration: "120 days",
+                    modules: [
+                        {
+                            id: 4,
+                            title: "Python for ML",
+                            tasks: [
+                                { id: 9, title: "NumPy Arrays" },
+                                { id: 10, title: "Pandas DataFrames" }
+                            ]
+                        }
+                    ],
+                    status: 'draft',
+                    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+                    created_by_name: 'Admin User'
+                }
+            ];
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('difficulty-filter').addEventListener('change', applyFilters);
+            document.getElementById('status-filter').addEventListener('change', applyFilters);
+            document.getElementById('search-filter').addEventListener('input', applyFilters);
+        }
+
+        // Render roadmaps
+        function renderRoadmaps() {
+            document.getElementById('loading-roadmaps').classList.add('hidden');
+            
+            updateStatistics();
+            applyFilters();
+            renderTable();
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            const totalModules = allRoadmaps.reduce((sum, r) => sum + r.modules.length, 0);
+            const totalTasks = allRoadmaps.reduce((sum, r) => 
+                sum + r.modules.reduce((moduleSum, m) => moduleSum + m.tasks.length, 0), 0
+            );
+            const publishedCount = allRoadmaps.filter(r => r.status === 'published').length;
+            
+            document.getElementById('total-roadmaps').textContent = allRoadmaps.length;
+            document.getElementById('published-roadmaps').textContent = publishedCount;
+            document.getElementById('total-modules').textContent = totalModules;
+            document.getElementById('total-tasks').textContent = totalTasks;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const difficultyFilter = document.getElementById('difficulty-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+            
+            filteredRoadmaps = allRoadmaps.filter(roadmap => {
+                if (difficultyFilter && roadmap.difficulty !== difficultyFilter) return false;
+                if (statusFilter && roadmap.status !== statusFilter) return false;
+                if (searchFilter && !roadmap.title.toLowerCase().includes(searchFilter)) return false;
+                return true;
+            });
+            
+            currentPage = 1;
+            renderTable();
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('difficulty-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            document.getElementById('search-filter').value = '';
+            applyFilters();
+        }
+
+        // Sort table
+        function sortTable(field) {
+            if (sortField === field) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
+            
+            filteredRoadmaps.sort((a, b) => {
+                let aVal = a[field];
+                let bVal = b[field];
+                
+                if (field === 'created_at') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                }
+                
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            renderTable();
+        }
+
+        // Render table
+        function renderTable() {
+            const tableBody = document.getElementById('roadmaps-table-body');
+            const roadmapsContent = document.getElementById('roadmaps-content');
+            const noRoadmaps = document.getElementById('no-roadmaps');
+            const pagination = document.getElementById('pagination');
+            
+            if (filteredRoadmaps.length === 0) {
+                roadmapsContent.classList.add('hidden');
+                noRoadmaps.classList.remove('hidden');
+                pagination.classList.add('hidden');
+                return;
+            }
+            
+            noRoadmaps.classList.add('hidden');
+            roadmapsContent.classList.remove('hidden');
+            
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredRoadmaps.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageRoadmaps = filteredRoadmaps.slice(startIndex, endIndex);
+            
+            // Render table rows
+            tableBody.innerHTML = pageRoadmaps.map(roadmap => {
+                const totalModules = roadmap.modules.length;
+                const totalTasks = roadmap.modules.reduce((sum, m) => sum + m.tasks.length, 0);
+                const createdDate = new Date(roadmap.created_at).toLocaleDateString();
+                
+                return `
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 1rem;">
+                            <input type="checkbox" class="roadmap-checkbox" value="${roadmap.id}">
+                        </td>
+                        <td style="padding: 1rem;">
+                            <div>
+                                <strong style="color: #333;">${roadmap.title}</strong>
+                                <br>
+                                <small style="color: #666;">by ${roadmap.created_by_name}</small>
+                            </div>
+                        </td>
+                        <td style="padding: 1rem;">
+                            <span class="difficulty-badge difficulty-${roadmap.difficulty}">${roadmap.difficulty}</span>
+                        </td>
+                        <td style="padding: 1rem; color: #666;">
+                            ${roadmap.duration}
+                        </td>
+                        <td style="padding: 1rem; color: #666;">
+                            ${totalModules} modules<br>
+                            ${totalTasks} tasks
+                        </td>
+                        <td style="padding: 1rem; color: #666;">
+                            ${createdDate}
+                        </td>
+                        <td style="padding: 1rem;">
+                            <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; 
+                                background: ${roadmap.status === 'published' ? '#d4edda' : '#fff3cd'}; 
+                                color: ${roadmap.status === 'published' ? '#155724' : '#856404'};">
+                                ${roadmap.status}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem;">
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <a href="/roadmap/${roadmap.id}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    👁️ View
+                                </a>
+                                <button onclick="editRoadmap(${roadmap.id})" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    ✏️ Edit
+                                </button>
+                                <button onclick="duplicateRoadmap(${roadmap.id})" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    📋 Copy
+                                </button>
+                                <button onclick="toggleStatus(${roadmap.id})" class="btn ${roadmap.status === 'published' ? 'btn-secondary' : 'btn-success'}" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    ${roadmap.status === 'published' ? '📥 Unpublish' : '📤 Publish'}
+                                </button>
+                                <button onclick="deleteRoadmap(${roadmap.id})" class="btn btn-danger" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Update pagination
+            if (totalPages > 1) {
+                pagination.classList.remove('hidden');
+                document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('prev-btn').disabled = currentPage === 1;
+                document.getElementById('next-btn').disabled = currentPage === totalPages;
+            } else {
+                pagination.classList.add('hidden');
+            }
+        }
+
+        // Pagination
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredRoadmaps.length / itemsPerPage);
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderTable();
+            }
+        }
+
+        // Toggle select all
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.roadmap-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // Roadmap actions
+        function editRoadmap(id) {
+            window.location.href = `/add-roadmap?edit=${id}`;
+        }
+
+        function duplicateRoadmap(id) {
+            const roadmap = allRoadmaps.find(r => r.id === id);
+            if (!roadmap) return;
+            
+            if (confirm(`Create a copy of "${roadmap.title}"?`)) {
+                // Mock duplication
+                const newRoadmap = {
+                    ...roadmap,
+                    id: allRoadmaps.length + 1,
+                    title: `${roadmap.title} (Copy)`,
+                    status: 'draft',
+                    created_at: new Date()
+                };
+                
+                allRoadmaps.push(newRoadmap);
+                applyFilters();
+                alert('Roadmap duplicated successfully!');
+            }
+        }
+
+        function toggleStatus(id) {
+            const roadmap = allRoadmaps.find(r => r.id === id);
+            if (!roadmap) return;
+            
+            const newStatus = roadmap.status === 'published' ? 'draft' : 'published';
+            const action = newStatus === 'published' ? 'publish' : 'unpublish';
+            
+            if (confirm(`Are you sure you want to ${action} "${roadmap.title}"?`)) {
+                roadmap.status = newStatus;
+                renderTable();
+                updateStatistics();
+                alert(`Roadmap ${action}ed successfully!`);
+            }
+        }
+
+        function deleteRoadmap(id) {
+            const roadmap = allRoadmaps.find(r => r.id === id);
+            if (!roadmap) return;
+            
+            if (!confirm(`Are you sure you want to delete "${roadmap.title}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            if (!confirm('This will permanently delete the roadmap and all associated user progress. Are you absolutely sure?')) {
+                return;
+            }
+            
+            // Mock deletion
+            allRoadmaps = allRoadmaps.filter(r => r.id !== id);
+            applyFilters();
+            updateStatistics();
+            alert('Roadmap deleted successfully!');
+        }
+
+        // Bulk actions
+        function bulkAction() {
+            const selectedIds = Array.from(document.querySelectorAll('.roadmap-checkbox:checked')).map(cb => cb.value);
+            
+            if (selectedIds.length === 0) {
+                alert('Please select at least one roadmap.');
+                return;
+            }
+            
+            const action = prompt('Bulk action options:\n1. Publish\n2. Unpublish\n3. Delete\n\nEnter 1, 2, or 3:');
+            
+            switch (action) {
+                case '1':
+                    bulkPublish(selectedIds);
+                    break;
+                case '2':
+                    bulkUnpublish(selectedIds);
+                    break;
+                case '3':
+                    bulkDelete(selectedIds);
+                    break;
+                default:
+                    alert('Invalid action selected.');
+            }
+        }
+
+        function bulkPublish(ids) {
+            ids.forEach(id => {
+                const roadmap = allRoadmaps.find(r => r.id == id);
+                if (roadmap) roadmap.status = 'published';
+            });
+            renderTable();
+            updateStatistics();
+            alert(`${ids.length} roadmap(s) published successfully!`);
+        }
+
+        function bulkUnpublish(ids) {
+            ids.forEach(id => {
+                const roadmap = allRoadmaps.find(r => r.id == id);
+                if (roadmap) roadmap.status = 'draft';
+            });
+            renderTable();
+            updateStatistics();
+            alert(`${ids.length} roadmap(s) unpublished successfully!`);
+        }
+
+        function bulkDelete(ids) {
+            if (!confirm(`Are you sure you want to delete ${ids.length} roadmap(s)? This action cannot be undone.`)) {
+                return;
+            }
+            
+            allRoadmaps = allRoadmaps.filter(r => !ids.includes(r.id.toString()));
+            applyFilters();
+            updateStatistics();
+            alert(`${ids.length} roadmap(s) deleted successfully!`);
+        }
+
+        // Export roadmaps
+        function exportRoadmaps() {
+            const data = {
+                roadmaps: allRoadmaps,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentAdmin.name,
+                totalCount: allRoadmaps.length
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `roadmaps-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            alert('Roadmaps exported successfully!');
+        }
+
+        // Import roadmaps
+        function importRoadmaps() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (data.roadmaps && Array.isArray(data.roadmaps)) {
+                            if (confirm(`Import ${data.roadmaps.length} roadmap(s)? This will add them to your existing roadmaps.`)) {
+                                // Mock import
+                                alert('Import functionality would be implemented here.');
+                            }
+                        } else {
+                            alert('Invalid file format. Please select a valid roadmap export file.');
+                        }
+                    } catch (error) {
+                        alert('Error reading file. Please select a valid JSON file.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // Show error
+        function showError() {
+            document.getElementById('loading-roadmaps').innerHTML = `
+                <div class="alert alert-error">
+                    <h3>Failed to load roadmaps</h3>
+                    <p>There was an error loading the roadmaps data.</p>
+                    <button onclick="location.reload()" class="btn btn-primary mt-2">Try Again</button>
+                </div>
+            `;
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initManageRoadmapsPage);
+    </script>
+</body>
+</html>
