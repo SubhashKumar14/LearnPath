@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🗺️ RoadmapLearn - Learning Path Management Platform
 
 A comprehensive roadmap management website where administrators can create structured learning paths and users can follow them to track their progress.
@@ -237,3 +238,12 @@ Built with modern web technologies and best practices for educational content ma
 **Happy Learning! 🚀**
 
 > This platform is designed to make structured learning accessible and engaging for everyone. Whether you're an educator creating content or a learner following a path, RoadmapLearn provides the tools you need to succeed.
+=======
+# StudyNavigator
+
+This repository was initialized by Builder.io.
+
+## Getting Started
+
+Welcome to your new repository! You can now start building your project.
+>>>>>>> refs/remotes/origin/main
