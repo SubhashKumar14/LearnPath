@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - RoadmapLearn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/user-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🗺️ RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/progress" class="btn btn-outline">My Progress</a>
+                    <a href="/profile" class="btn btn-outline">Profile</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Welcome Section -->
+        <section class="hero" style="margin-bottom: 3rem;">
+            <div class="container">
+                <h1 id="welcome-title" class="hero-title">Welcome back!</h1>
+                <p class="hero-subtitle">Continue your learning journey with our structured roadmaps</p>
+            </div>
+        </section>
+
+        <!-- Stats Overview -->
+        <section class="stats-grid" id="stats-section">
+            <div class="stat-card">
+                <span class="stat-number" id="total-roadmaps">0</span>
+                <span class="stat-label">Available Roadmaps</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="followed-roadmaps">0</span>
+                <span class="stat-label">Following</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="completed-tasks">0</span>
+                <span class="stat-label">Tasks Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="overall-progress">0%</span>
+                <span class="stat-label">Overall Progress</span>
+            </div>
+        </section>
+
+        <!-- Filters -->
+        <section class="card" style="margin-bottom: 2rem;">
+            <h2 class="card-title">Find Your Perfect Roadmap</h2>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div>
+                    <label for="difficulty-filter" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Difficulty</label>
+                    <select id="difficulty-filter" class="form-control" style="width: auto; min-width: 150px;">
+                        <option value="">All Levels</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="duration-filter" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Duration</label>
+                    <select id="duration-filter" class="form-control" style="width: auto; min-width: 150px;">
+                        <option value="">Any Duration</option>
+                        <option value="30">30 days or less</option>
+                        <option value="60">60 days or less</option>
+                        <option value="90">90 days or less</option>
+                        <option value="120">120+ days</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="search-filter" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Search</label>
+                    <input 
+                        type="text" 
+                        id="search-filter" 
+                        class="form-control" 
+                        placeholder="Search roadmaps..." 
+                        style="width: auto; min-width: 200px;"
+                    >
+                </div>
+                <div style="align-self: end;">
+                    <button onclick="clearFilters()" class="btn btn-secondary">Clear Filters</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Roadmaps Grid -->
+        <section>
+            <h2 style="color: #333; margin-bottom: 1.5rem;">Available Roadmaps</h2>
+            <div id="loading-spinner" class="text-center">
+                <div class="spinner"></div>
+                <p>Loading roadmaps...</p>
+            </div>
+            <div id="roadmaps-grid" class="dashboard-grid hidden"></div>
+            <div id="no-roadmaps" class="text-center hidden" style="padding: 3rem; color: #666;">
+                <h3>No roadmaps found</h3>
+                <p>Try adjusting your filters or check back later for new roadmaps.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Empowering learners worldwide.</p>
+        </div>
+    </footer>
+
+    <script>
+        let allRoadmaps = [];
+        let userProgress = {};
+        let currentUser = null;
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                // Get current user
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                currentUser = await userResponse.json();
+                document.getElementById('welcome-title').textContent = `Welcome back, ${currentUser.name}!`;
+
+                // Load roadmaps and progress
+                await Promise.all([loadRoadmaps(), loadUserProgress()]);
+                updateStats();
+                renderRoadmaps();
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+                showAlert('Failed to load dashboard data', 'error');
+            }
+        }
+
+        // Load all roadmaps
+        async function loadRoadmaps() {
+            try {
+                const response = await fetch('/api/roadmaps');
+                if (response.ok) {
+                    allRoadmaps = await response.json();
+                } else {
+                    // Create sample roadmaps if none exist
+                    allRoadmaps = createSampleRoadmaps();
+                }
+            } catch (error) {
+                console.error('Failed to load roadmaps:', error);
+                allRoadmaps = createSampleRoadmaps();
+            }
+        }
+
+        // Load user progress
+        async function loadUserProgress() {
+            try {
+                userProgress = {};
+                for (const roadmap of allRoadmaps) {
+                    const response = await fetch(`/api/progress/${roadmap.id}`);
+                    if (response.ok) {
+                        const progress = await response.json();
+                        userProgress[roadmap.id] = progress;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load user progress:', error);
+            }
+        }
+
+        // Create sample roadmaps
+        function createSampleRoadmaps() {
+            return [
+                {
+                    id: 1,
+                    title: "Data Structures & Algorithms",
+                    difficulty: "beginner",
+                    duration: "60 days",
+                    modules: [
+                        {
+                            id: 1,
+                            title: "Arrays and Strings",
+                            tasks: [
+                                { id: 1, title: "Two Sum Problem", description: "Learn about array traversal and hash maps" },
+                                { id: 2, title: "Valid Anagram", description: "String manipulation and character counting" },
+                                { id: 3, title: "Contains Duplicate", description: "Hash set usage for duplicate detection" }
+                            ]
+                        },
+                        {
+                            id: 2,
+                            title: "Linked Lists",
+                            tasks: [
+                                { id: 4, title: "Reverse Linked List", description: "Learn pointer manipulation" },
+                                { id: 5, title: "Merge Two Sorted Lists", description: "Understand merging algorithms" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Full Stack Web Development",
+                    difficulty: "intermediate",
+                    duration: "90 days",
+                    modules: [
+                        {
+                            id: 3,
+                            title: "Frontend Fundamentals",
+                            tasks: [
+                                { id: 6, title: "HTML5 Semantics", description: "Modern HTML structure and accessibility" },
+                                { id: 7, title: "CSS Grid & Flexbox", description: "Advanced CSS layout techniques" },
+                                { id: 8, title: "JavaScript ES6+", description: "Modern JavaScript features" }
+                            ]
+                        },
+                        {
+                            id: 4,
+                            title: "React Development",
+                            tasks: [
+                                { id: 9, title: "Components and JSX", description: "Learn React fundamentals" },
+                                { id: 10, title: "State Management", description: "Hooks and state handling" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Machine Learning Basics",
+                    difficulty: "advanced",
+                    duration: "120 days",
+                    modules: [
+                        {
+                            id: 5,
+                            title: "Python for ML",
+                            tasks: [
+                                { id: 11, title: "NumPy Arrays", description: "Numerical computing with Python" },
+                                { id: 12, title: "Pandas DataFrames", description: "Data manipulation and analysis" }
+                            ]
+                        }
+                    ]
+                }
+            ];
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('total-roadmaps').textContent = allRoadmaps.length;
+            
+            const followedCount = Object.keys(userProgress).filter(id => userProgress[id].length > 0).length;
+            document.getElementById('followed-roadmaps').textContent = followedCount;
+            
+            const totalCompleted = Object.values(userProgress).flat().length;
+            document.getElementById('completed-tasks').textContent = totalCompleted;
+            
+            const totalTasks = allRoadmaps.reduce((sum, roadmap) => 
+                sum + roadmap.modules.reduce((moduleSum, module) => moduleSum + module.tasks.length, 0), 0
+            );
+            const progressPercentage = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+            document.getElementById('overall-progress').textContent = `${progressPercentage}%`;
+        }
+
+        // Render roadmaps
+        function renderRoadmaps() {
+            const grid = document.getElementById('roadmaps-grid');
+            const loading = document.getElementById('loading-spinner');
+            const noResults = document.getElementById('no-roadmaps');
+            
+            loading.classList.add('hidden');
+            
+            const filteredRoadmaps = filterRoadmaps();
+            
+            if (filteredRoadmaps.length === 0) {
+                grid.classList.add('hidden');
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            grid.classList.remove('hidden');
+            
+            grid.innerHTML = filteredRoadmaps.map(roadmap => {
+                const progress = userProgress[roadmap.id] || [];
+                const totalTasks = roadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+                const completedTasks = progress.length;
+                const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                
+                return `
+                    <div class="card">
+                        <div class="card-title">${roadmap.title}</div>
+                        <div class="card-content">
+                            <div class="roadmap-meta mb-2">
+                                <div class="meta-item">
+                                    <span class="difficulty-badge difficulty-${roadmap.difficulty}">${roadmap.difficulty}</span>
+                                </div>
+                                <div class="meta-item">
+                                    ⏱️ ${roadmap.duration}
+                                </div>
+                            </div>
+                            <p style="margin-bottom: 1rem; color: #666;">
+                                ${roadmap.modules.length} modules • ${totalTasks} tasks
+                            </p>
+                            ${progressPercentage > 0 ? `
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                                    </div>
+                                    <div class="progress-text">${completedTasks}/${totalTasks} tasks completed (${progressPercentage}%)</div>
+                                </div>
+                            ` : ''}
+                            <div class="mt-3">
+                                <a href="/roadmap/${roadmap.id}" class="btn btn-primary">
+                                    ${progressPercentage > 0 ? 'Continue Learning' : 'Start Learning'}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter roadmaps
+        function filterRoadmaps() {
+            const difficulty = document.getElementById('difficulty-filter').value;
+            const duration = document.getElementById('duration-filter').value;
+            const search = document.getElementById('search-filter').value.toLowerCase();
+            
+            return allRoadmaps.filter(roadmap => {
+                if (difficulty && roadmap.difficulty !== difficulty) return false;
+                
+                if (duration) {
+                    const roadmapDays = parseInt(roadmap.duration.match(/\d+/)[0]);
+                    const filterDays = parseInt(duration);
+                    
+                    if (duration === "120") {
+                        if (roadmapDays < 120) return false;
+                    } else {
+                        if (roadmapDays > filterDays) return false;
+                    }
+                }
+                
+                if (search) {
+                    return roadmap.title.toLowerCase().includes(search) ||
+                           roadmap.modules.some(module => 
+                               module.title.toLowerCase().includes(search) ||
+                               module.tasks.some(task => 
+                                   task.title.toLowerCase().includes(search) ||
+                                   task.description.toLowerCase().includes(search)
+                               )
+                           );
+                }
+                
+                return true;
+            });
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('difficulty-filter').value = '';
+            document.getElementById('duration-filter').value = '';
+            document.getElementById('search-filter').value = '';
+            renderRoadmaps();
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            // Simple alert for now - could be enhanced with custom modal
+            alert(message);
+        }
+
+        // Add event listeners
+        document.getElementById('difficulty-filter').addEventListener('change', renderRoadmaps);
+        document.getElementById('duration-filter').addEventListener('change', renderRoadmaps);
+        document.getElementById('search-filter').addEventListener('input', renderRoadmaps);
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
