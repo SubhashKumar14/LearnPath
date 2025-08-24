@@ -19,8 +19,8 @@ app.use(session({
 
 // Simple in-memory storage (for demo - replace with MySQL in production)
 let users = [
-  { id: 1, email: 'admin@test.com', password: '$2a$10$9X.6ZBAV9P8B8xJdLLhpqOK9F4M8B1fBQPgJxr8A3Q2X1.xKr9K8G', name: 'Admin', role: 'admin' }, // password: admin123
-  { id: 2, email: 'user@test.com', password: '$2a$10$9X.6ZBAV9P8B8xJdLLhpqOK9F4M8B1fBQPgJxr8A3Q2X1.xKr9K8G', name: 'Test User', role: 'user' } // password: user123
+  { id: 1, email: 'admin@test.com', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', name: 'Admin', role: 'admin' }, // password: admin123
+  { id: 2, email: 'user@test.com', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', name: 'Test User', role: 'user' } // password: user123
 ];
 
 let roadmaps = [
