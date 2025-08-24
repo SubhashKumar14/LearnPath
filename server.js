@@ -18,10 +18,22 @@ app.use(session({
 }));
 
 // Simple in-memory storage (for demo - replace with MySQL in production)
-let users = [
-  { id: 1, email: 'admin@test.com', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', name: 'Admin', role: 'admin' }, // password: admin123
-  { id: 2, email: 'user@test.com', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', name: 'Test User', role: 'user' } // password: user123
-];
+let users = [];
+
+// Initialize demo accounts with proper password hashing
+async function initializeDemoAccounts() {
+  const adminHash = await bcrypt.hash('admin123', 10);
+  const userHash = await bcrypt.hash('user123', 10);
+
+  users = [
+    { id: 1, email: 'admin@test.com', password: adminHash, name: 'Admin', role: 'admin' },
+    { id: 2, email: 'user@test.com', password: userHash, name: 'Test User', role: 'user' }
+  ];
+
+  console.log('Demo accounts initialized:');
+  console.log('Admin: admin@test.com / admin123');
+  console.log('User: user@test.com / user123');
+}
 
 let roadmaps = [
   {
