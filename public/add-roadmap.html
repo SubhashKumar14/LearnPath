@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Roadmap - RoadmapLearn Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/admin-dashboard" class="logo" style="text-decoration: none; color: white;">
+                    🛠️ Admin Panel - RoadmapLearn
+                </a>
+                <nav class="nav-links">
+                    <a href="/admin-dashboard" class="btn btn-outline">Dashboard</a>
+                    <a href="/manage-roadmaps" class="btn btn-outline">Manage Roadmaps</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Page Header -->
+        <section class="text-center mb-4">
+            <h1 id="page-title" style="color: #333; margin-bottom: 0.5rem;">Create New Roadmap</h1>
+            <p style="color: #666; font-size: 1.1rem;">Design a structured learning path for your students</p>
+        </section>
+
+        <!-- Alert Messages -->
+        <div id="alert-container"></div>
+
+        <!-- Main Form -->
+        <div class="form-container" style="max-width: 800px;">
+            <form id="roadmap-form">
+                <!-- Basic Information -->
+                <section class="mb-4">
+                    <h3 style="color: #333; margin-bottom: 1rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem;">
+                        📋 Basic Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="roadmap-title">Roadmap Title *</label>
+                        <input 
+                            type="text" 
+                            id="roadmap-title" 
+                            name="title" 
+                            class="form-control" 
+                            required 
+                            placeholder="e.g., Data Structures & Algorithms"
+                            maxlength="100"
+                        >
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="difficulty">Difficulty Level *</label>
+                            <select id="difficulty" name="difficulty" class="form-control" required>
+                                <option value="">Select difficulty</option>
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="duration">Duration *</label>
+                            <input 
+                                type="text" 
+                                id="duration" 
+                                name="duration" 
+                                class="form-control" 
+                                required 
+                                placeholder="e.g., 60 days, 3 months"
+                                maxlength="50"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea 
+                            id="description" 
+                            name="description" 
+                            class="form-control textarea" 
+                            placeholder="Provide a brief description of what students will learn..."
+                            maxlength="500"
+                        ></textarea>
+                        <small style="color: #666; font-size: 0.85rem;">Optional - up to 500 characters</small>
+                    </div>
+                </section>
+
+                <!-- Modules Section -->
+                <section class="mb-4">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="color: #333; margin: 0; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; flex: 1;">
+                            📚 Modules & Tasks
+                        </h3>
+                        <button type="button" onclick="addModule()" class="btn btn-primary" style="margin-left: 1rem;">
+                            ➕ Add Module
+                        </button>
+                    </div>
+                    
+                    <div id="modules-container">
+                        <!-- Modules will be added here dynamically -->
+                    </div>
+                    
+                    <div id="no-modules" class="text-center" style="padding: 2rem; border: 2px dashed #e0e0e0; border-radius: 10px; color: #666;">
+                        <p>No modules added yet. Click "Add Module" to create your first module.</p>
+                    </div>
+                </section>
+
+                <!-- Form Actions -->
+                <div class="form-group" style="display: flex; gap: 1rem; justify-content: center; padding-top: 2rem; border-top: 2px solid #e0e0e0;">
+                    <button type="submit" class="btn btn-primary" style="min-width: 150px;">
+                        <span id="submit-btn-text">Create Roadmap</span>
+                        <div id="submit-spinner" class="spinner hidden" style="margin: 0; width: 20px; height: 20px; border-width: 2px;"></div>
+                    </button>
+                    <button type="button" onclick="previewRoadmap()" class="btn btn-secondary">
+                        👁️ Preview
+                    </button>
+                    <button type="button" onclick="saveDraft()" class="btn btn-outline">
+                        💾 Save Draft
+                    </button>
+                    <a href="/admin-dashboard" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RoadmapLearn. Admin Panel</p>
+        </div>
+    </footer>
+
+    <!-- Module Template (Hidden) -->
+    <template id="module-template">
+        <div class="module-editor card" data-module-index="">
+            <div class="card-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="color: #333; margin: 0;">Module <span class="module-number"></span></h4>
+                    <button type="button" onclick="removeModule(this)" class="btn btn-danger" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                        🗑️ Remove
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label>Module Title *</label>
+                    <input 
+                        type="text" 
+                        name="modules[][title]" 
+                        class="form-control module-title" 
+                        required 
+                        placeholder="e.g., Arrays and Strings"
+                        maxlength="100"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label>Module Description</label>
+                    <textarea 
+                        name="modules[][description]" 
+                        class="form-control" 
+                        placeholder="Brief description of this module..."
+                        maxlength="300"
+                        rows="2"
+                    ></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0; font-weight: 500;">Tasks</label>
+                        <button type="button" onclick="addTask(this)" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                            ➕ Add Task
+                        </button>
+                    </div>
+                    <div class="tasks-container">
+                        <!-- Tasks will be added here -->
+                    </div>
+                    <div class="no-tasks text-center" style="padding: 1rem; border: 1px dashed #ccc; border-radius: 5px; color: #666; margin-top: 0.5rem;">
+                        <small>No tasks added. Click "Add Task" to create tasks for this module.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Task Template (Hidden) -->
+    <template id="task-template">
+        <div class="task-editor" style="border: 1px solid #e0e0e0; border-radius: 5px; padding: 1rem; margin-bottom: 0.5rem; background: #f8f9fa;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <strong style="color: #333;">Task <span class="task-number"></span></strong>
+                <button type="button" onclick="removeTask(this)" class="btn btn-danger" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                    ✕
+                </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <input 
+                    type="text" 
+                    name="tasks[][title]" 
+                    class="form-control task-title" 
+                    placeholder="Task title..."
+                    required
+                    maxlength="100"
+                    style="font-size: 0.9rem;"
+                >
+                <select name="tasks[][type]" class="form-control" style="font-size: 0.9rem;">
+                    <option value="reading">Reading</option>
+                    <option value="coding">Coding</option>
+                    <option value="video">Video</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="project">Project</option>
+                </select>
+            </div>
+            
+            <textarea 
+                name="tasks[][description]" 
+                class="form-control task-description" 
+                placeholder="Task description..."
+                rows="2"
+                maxlength="300"
+                style="font-size: 0.9rem;"
+            ></textarea>
+        </div>
+    </template>
+
+    <script>
+        let moduleCounter = 0;
+        let currentAdmin = null;
+        let isEditMode = false;
+        let editingRoadmapId = null;
+
+        // Initialize page
+        async function initAddRoadmapPage() {
+            try {
+                // Get current user and verify admin role
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                currentAdmin = await userResponse.json();
+                if (currentAdmin.role !== 'admin') {
+                    alert('Access denied. Admin privileges required.');
+                    window.location.href = '/user-dashboard';
+                    return;
+                }
+
+                // Check if in edit mode
+                const urlParams = new URLSearchParams(window.location.search);
+                editingRoadmapId = urlParams.get('edit');
+                
+                if (editingRoadmapId) {
+                    isEditMode = true;
+                    await loadRoadmapForEdit(editingRoadmapId);
+                } else {
+                    // Add initial module in create mode
+                    addModule();
+                }
+
+                setupEventListeners();
+            } catch (error) {
+                console.error('Failed to initialize add roadmap page:', error);
+                showAlert('Failed to load page data', 'error');
+            }
+        }
+
+        // Load roadmap data for editing
+        async function loadRoadmapForEdit(roadmapId) {
+            try {
+                const response = await fetch(`/api/roadmap/${roadmapId}`);
+                if (response.ok) {
+                    const roadmap = await response.json();
+                    populateFormForEdit(roadmap);
+                } else {
+                    throw new Error('Roadmap not found');
+                }
+            } catch (error) {
+                console.error('Failed to load roadmap for editing:', error);
+                showAlert('Failed to load roadmap data', 'error');
+            }
+        }
+
+        // Populate form for editing
+        function populateFormForEdit(roadmap) {
+            document.getElementById('page-title').textContent = 'Edit Roadmap';
+            document.getElementById('submit-btn-text').textContent = 'Update Roadmap';
+            
+            // Fill basic information
+            document.getElementById('roadmap-title').value = roadmap.title;
+            document.getElementById('difficulty').value = roadmap.difficulty;
+            document.getElementById('duration').value = roadmap.duration;
+            document.getElementById('description').value = roadmap.description || '';
+            
+            // Add modules and tasks
+            roadmap.modules.forEach(module => {
+                addModule();
+                const moduleEditor = document.querySelector('.module-editor:last-child');
+                moduleEditor.querySelector('.module-title').value = module.title;
+                moduleEditor.querySelector('textarea[name="modules[][description]"]').value = module.description || '';
+                
+                // Add tasks
+                module.tasks.forEach(task => {
+                    addTask(moduleEditor.querySelector('.btn-secondary'));
+                    const taskEditor = moduleEditor.querySelector('.task-editor:last-child');
+                    taskEditor.querySelector('.task-title').value = task.title;
+                    taskEditor.querySelector('.task-description').value = task.description || '';
+                    taskEditor.querySelector('select[name="tasks[][type]"]').value = task.type || 'reading';
+                });
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('roadmap-form').addEventListener('submit', handleFormSubmit);
+        }
+
+        // Add new module
+        function addModule() {
+            moduleCounter++;
+            const template = document.getElementById('module-template');
+            const clone = template.content.cloneNode(true);
+            
+            // Update module number
+            clone.querySelector('.module-number').textContent = moduleCounter;
+            clone.querySelector('.module-editor').dataset.moduleIndex = moduleCounter;
+            
+            // Add to container
+            document.getElementById('modules-container').appendChild(clone);
+            
+            // Hide no-modules message
+            document.getElementById('no-modules').style.display = 'none';
+            
+            // Add initial task
+            const moduleEditor = document.querySelector(`.module-editor[data-module-index="${moduleCounter}"]`);
+            addTask(moduleEditor.querySelector('button[onclick="addTask(this)"]'));
+        }
+
+        // Remove module
+        function removeModule(button) {
+            const moduleEditor = button.closest('.module-editor');
+            
+            if (document.querySelectorAll('.module-editor').length === 1) {
+                showAlert('At least one module is required', 'error');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to remove this module and all its tasks?')) {
+                moduleEditor.remove();
+                updateModuleNumbers();
+                
+                // Show no-modules message if no modules left
+                if (document.querySelectorAll('.module-editor').length === 0) {
+                    document.getElementById('no-modules').style.display = 'block';
+                }
+            }
+        }
+
+        // Add new task
+        function addTask(button) {
+            const moduleEditor = button.closest('.module-editor');
+            const tasksContainer = moduleEditor.querySelector('.tasks-container');
+            const noTasksMessage = moduleEditor.querySelector('.no-tasks');
+            
+            const template = document.getElementById('task-template');
+            const clone = template.content.cloneNode(true);
+            
+            // Update task number
+            const taskNumber = tasksContainer.children.length + 1;
+            clone.querySelector('.task-number').textContent = taskNumber;
+            
+            // Add to container
+            tasksContainer.appendChild(clone);
+            
+            // Hide no-tasks message
+            noTasksMessage.style.display = 'none';
+        }
+
+        // Remove task
+        function removeTask(button) {
+            const taskEditor = button.closest('.task-editor');
+            const tasksContainer = taskEditor.parentElement;
+            const moduleEditor = button.closest('.module-editor');
+            const noTasksMessage = moduleEditor.querySelector('.no-tasks');
+            
+            if (tasksContainer.children.length === 1) {
+                showAlert('At least one task is required per module', 'error');
+                return;
+            }
+            
+            taskEditor.remove();
+            updateTaskNumbers(tasksContainer);
+            
+            // Show no-tasks message if no tasks left
+            if (tasksContainer.children.length === 0) {
+                noTasksMessage.style.display = 'block';
+            }
+        }
+
+        // Update module numbers
+        function updateModuleNumbers() {
+            const modules = document.querySelectorAll('.module-editor');
+            modules.forEach((module, index) => {
+                module.querySelector('.module-number').textContent = index + 1;
+                module.dataset.moduleIndex = index + 1;
+            });
+        }
+
+        // Update task numbers
+        function updateTaskNumbers(tasksContainer) {
+            const tasks = tasksContainer.querySelectorAll('.task-editor');
+            tasks.forEach((task, index) => {
+                task.querySelector('.task-number').textContent = index + 1;
+            });
+        }
+
+        // Handle form submission
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
+            const roadmapData = collectFormData();
+            setLoading(true);
+            
+            try {
+                const method = isEditMode ? 'PUT' : 'POST';
+                const url = isEditMode ? `/api/roadmaps/${editingRoadmapId}` : '/api/roadmaps';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(roadmapData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const action = isEditMode ? 'updated' : 'created';
+                    showAlert(`Roadmap ${action} successfully!`, 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/admin-dashboard';
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'create'} roadmap`);
+                }
+            } catch (error) {
+                console.error('Failed to submit roadmap:', error);
+                showAlert(error.message || 'Failed to save roadmap. Please try again.', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Validate form
+        function validateForm() {
+            const title = document.getElementById('roadmap-title').value.trim();
+            const difficulty = document.getElementById('difficulty').value;
+            const duration = document.getElementById('duration').value.trim();
+            const modules = document.querySelectorAll('.module-editor');
+            
+            if (!title) {
+                showAlert('Roadmap title is required', 'error');
+                return false;
+            }
+            
+            if (!difficulty) {
+                showAlert('Difficulty level is required', 'error');
+                return false;
+            }
+            
+            if (!duration) {
+                showAlert('Duration is required', 'error');
+                return false;
+            }
+            
+            if (modules.length === 0) {
+                showAlert('At least one module is required', 'error');
+                return false;
+            }
+            
+            // Validate each module
+            for (let module of modules) {
+                const moduleTitle = module.querySelector('.module-title').value.trim();
+                const tasks = module.querySelectorAll('.task-editor');
+                
+                if (!moduleTitle) {
+                    showAlert('All modules must have a title', 'error');
+                    return false;
+                }
+                
+                if (tasks.length === 0) {
+                    showAlert('Each module must have at least one task', 'error');
+                    return false;
+                }
+                
+                // Validate each task
+                for (let task of tasks) {
+                    const taskTitle = task.querySelector('.task-title').value.trim();
+                    
+                    if (!taskTitle) {
+                        showAlert('All tasks must have a title', 'error');
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // Collect form data
+        function collectFormData() {
+            const modules = [];
+            
+            document.querySelectorAll('.module-editor').forEach((moduleEl, moduleIndex) => {
+                const moduleTitle = moduleEl.querySelector('.module-title').value.trim();
+                const moduleDescription = moduleEl.querySelector('textarea[name="modules[][description]"]').value.trim();
+                
+                const tasks = [];
+                moduleEl.querySelectorAll('.task-editor').forEach((taskEl, taskIndex) => {
+                    const taskTitle = taskEl.querySelector('.task-title').value.trim();
+                    const taskDescription = taskEl.querySelector('.task-description').value.trim();
+                    const taskType = taskEl.querySelector('select[name="tasks[][type]"]').value;
+                    
+                    tasks.push({
+                        id: taskIndex + 1,
+                        title: taskTitle,
+                        description: taskDescription,
+                        type: taskType
+                    });
+                });
+                
+                modules.push({
+                    id: moduleIndex + 1,
+                    title: moduleTitle,
+                    description: moduleDescription,
+                    tasks: tasks
+                });
+            });
+            
+            return {
+                title: document.getElementById('roadmap-title').value.trim(),
+                difficulty: document.getElementById('difficulty').value,
+                duration: document.getElementById('duration').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                modules: modules
+            };
+        }
+
+        // Preview roadmap
+        function previewRoadmap() {
+            if (!validateForm()) {
+                return;
+            }
+            
+            const roadmapData = collectFormData();
+            
+            // Create preview window
+            const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+            previewWindow.document.write(generatePreviewHTML(roadmapData));
+        }
+
+        // Generate preview HTML
+        function generatePreviewHTML(roadmapData) {
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Preview: ${roadmapData.title}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                        .header { background: #667eea; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+                        .module { background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 4px solid #667eea; }
+                        .task { background: white; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #e0e0e0; }
+                        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
+                        .difficulty-beginner { background: #d4edda; color: #155724; }
+                        .difficulty-intermediate { background: #fff3cd; color: #856404; }
+                        .difficulty-advanced { background: #f8d7da; color: #721c24; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>${roadmapData.title}</h1>
+                        <p><span class="badge difficulty-${roadmapData.difficulty}">${roadmapData.difficulty}</span> • ${roadmapData.duration}</p>
+                        ${roadmapData.description ? `<p>${roadmapData.description}</p>` : ''}
+                    </div>
+                    
+                    ${roadmapData.modules.map((module, index) => `
+                        <div class="module">
+                            <h3>Module ${index + 1}: ${module.title}</h3>
+                            ${module.description ? `<p>${module.description}</p>` : ''}
+                            
+                            ${module.tasks.map((task, taskIndex) => `
+                                <div class="task">
+                                    <strong>Task ${taskIndex + 1}: ${task.title}</strong>
+                                    ${task.type !== 'reading' ? ` <em>(${task.type})</em>` : ''}
+                                    ${task.description ? `<br><small>${task.description}</small>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}
+                </body>
+                </html>
+            `;
+        }
+
+        // Save draft
+        function saveDraft() {
+            const draftData = collectFormData();
+            localStorage.setItem('roadmap_draft', JSON.stringify(draftData));
+            showAlert('Draft saved locally!', 'success');
+        }
+
+        // Load draft
+        function loadDraft() {
+            const draft = localStorage.getItem('roadmap_draft');
+            if (draft) {
+                // This would populate the form with draft data
+                showAlert('Draft loaded!', 'success');
+            }
+        }
+
+        // Set loading state
+        function setLoading(isLoading) {
+            const btnText = document.getElementById('submit-btn-text');
+            const spinner = document.getElementById('submit-spinner');
+            const button = document.querySelector('#roadmap-form button[type="submit"]');
+            
+            if (isLoading) {
+                btnText.textContent = isEditMode ? 'Updating...' : 'Creating...';
+                spinner.classList.remove('hidden');
+                button.disabled = true;
+            } else {
+                btnText.textContent = isEditMode ? 'Update Roadmap' : 'Create Roadmap';
+                spinner.classList.add('hidden');
+                button.disabled = false;
+            }
+        }
+
+        // Show alert message
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initAddRoadmapPage);
+    </script>
+</body>
+</html>
