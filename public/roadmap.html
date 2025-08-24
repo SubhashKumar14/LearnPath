@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap - A2Z Learning</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">A2Z Learning</div>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/progress">Progress</a>
+                <a href="/profile">Profile</a>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="roadmap-header">
+            <h1 id="roadmapTitle">Loading...</h1>
+            <div class="roadmap-meta">
+                <span id="difficultyBadge" class="badge">Loading</span>
+                <span id="duration" style="color: #666;">Loading</span>
+                <span id="moduleCount" style="color: #666;">Loading</span>
+            </div>
+            <div class="progress-bar">
+                <div id="overallProgressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="overallProgressText" class="progress-text">0/0 tasks completed (0%)</div>
+        </div>
+
+        <div id="roadmapContent">
+            <!-- Roadmap modules will be loaded here -->
+        </div>
+
+        <div class="text-center mt-2">
+            <a href="/dashboard" class="btn btn-outline">Back to Dashboard</a>
+            <button onclick="resetProgress()" class="btn btn-secondary">Reset Progress</button>
+        </div>
+    </div>
+
+    <script>
+        let currentRoadmap = null;
+        let userProgress = [];
+        const roadmapId = window.location.pathname.split('/').pop();
+
+        async function loadRoadmap() {
+            try {
+                // Get roadmap data
+                const roadmapResponse = await fetch(`/api/roadmap/${roadmapId}`);
+                currentRoadmap = await roadmapResponse.json();
+
+                // Get user progress
+                const progressResponse = await fetch(`/api/progress/${roadmapId}`);
+                userProgress = await progressResponse.json();
+
+                renderRoadmap();
+            } catch (error) {
+                console.error('Failed to load roadmap:', error);
+                document.getElementById('roadmapContent').innerHTML = 
+                    '<div class="alert alert-error">Failed to load roadmap. <a href="/dashboard">Go back</a></div>';
+            }
+        }
+
+        function renderRoadmap() {
+            // Update header
+            document.getElementById('roadmapTitle').textContent = currentRoadmap.title;
+            document.getElementById('difficultyBadge').textContent = currentRoadmap.difficulty;
+            document.getElementById('difficultyBadge').className = `badge badge-${currentRoadmap.difficulty.toLowerCase()}`;
+            document.getElementById('duration').textContent = currentRoadmap.duration;
+            document.getElementById('moduleCount').textContent = `${currentRoadmap.modules.length} modules`;
+
+            // Calculate overall progress
+            const totalTasks = currentRoadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+            const completedTasks = userProgress.length;
+            const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            document.getElementById('overallProgressFill').style.width = `${progressPercentage}%`;
+            document.getElementById('overallProgressText').textContent = 
+                `${completedTasks}/${totalTasks} tasks completed (${progressPercentage}%)`;
+
+            // Render modules in A2Z format
+            const content = document.getElementById('roadmapContent');
+            content.innerHTML = currentRoadmap.modules.map((module, moduleIndex) => `
+                <div class="roadmap-step">
+                    <div class="step-header">${module.title}</div>
+                    <div class="step-content">
+                        ${module.tasks.map((task, taskIndex) => {
+                            const isCompleted = userProgress.includes(task.id);
+                            return `
+                                <div class="task-item ${isCompleted ? 'task-completed' : ''}">
+                                    <input 
+                                        type="checkbox" 
+                                        class="task-checkbox" 
+                                        ${isCompleted ? 'checked' : ''}
+                                        onchange="toggleTask(${task.id}, this.checked)"
+                                    >
+                                    <div class="task-content">
+                                        <div class="task-title">${task.title}</div>
+                                        <div class="task-type">${task.type}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // Update page title
+            document.title = `${currentRoadmap.title} - A2Z Learning`;
+        }
+
+        async function toggleTask(taskId, completed) {
+            try {
+                await fetch('/api/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        roadmapId: parseInt(roadmapId),
+                        taskId: taskId,
+                        completed: completed
+                    })
+                });
+
+                // Update local progress
+                if (completed) {
+                    if (!userProgress.includes(taskId)) {
+                        userProgress.push(taskId);
+                    }
+                } else {
+                    userProgress = userProgress.filter(id => id !== taskId);
+                }
+
+                // Update progress display
+                updateProgressDisplay();
+
+                // Update task appearance
+                const taskItem = event.target.closest('.task-item');
+                if (completed) {
+                    taskItem.classList.add('task-completed');
+                } else {
+                    taskItem.classList.remove('task-completed');
+                }
+
+            } catch (error) {
+                console.error('Failed to update progress:', error);
+                // Revert checkbox state
+                event.target.checked = !completed;
+            }
+        }
+
+        function updateProgressDisplay() {
+            const totalTasks = currentRoadmap.modules.reduce((sum, module) => sum + module.tasks.length, 0);
+            const completedTasks = userProgress.length;
+            const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            document.getElementById('overallProgressFill').style.width = `${progressPercentage}%`;
+            document.getElementById('overallProgressText').textContent = 
+                `${completedTasks}/${totalTasks} tasks completed (${progressPercentage}%)`;
+        }
+
+        async function resetProgress() {
+            if (!confirm('Are you sure you want to reset all progress for this roadmap?')) {
+                return;
+            }
+
+            try {
+                // Reset all tasks
+                for (const taskId of userProgress) {
+                    await fetch('/api/progress', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            roadmapId: parseInt(roadmapId),
+                            taskId: taskId,
+                            completed: false
+                        })
+                    });
+                }
+
+                // Clear local progress and reload
+                userProgress = [];
+                renderRoadmap();
+                alert('Progress reset successfully!');
+            } catch (error) {
+                console.error('Failed to reset progress:', error);
+                alert('Failed to reset progress. Please try again.');
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        // Load roadmap when page loads
+        loadRoadmap();
+    </script>
+</body>
+</html>
