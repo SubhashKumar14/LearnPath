@@ -35,7 +35,7 @@ class LearningPlatform {
     container.innerHTML = this.courses.map(c=>`
       <div class="col-md-6 col-lg-4 mb-4">
         <div class="card course-card h-100" onclick="viewCourse(${c.id})">
-          <img src="${c.hero_image || 'https://via.placeholder.com/400x250/4361ee/ffffff?text=Course'}" class="card-img-top" alt="${c.title}">
+          <img src="${c.hero_image || '/images/fallback-course.svg'}" onerror="this.onerror=null;this.src='/images/fallback-course.svg'" class="card-img-top" alt="${c.title}">
           <div class="card-body">
             <h5 class="card-title">${c.title}</h5>
             <p class="card-text">${c.description}</p>
@@ -52,7 +52,7 @@ class LearningPlatform {
     const container = document.getElementById('featured-courses');
     container.innerHTML = this.courses.slice(0,3).map(c=>`
       <div class="col-md-4 mb-4"><div class="card course-card h-100" onclick="viewCourse(${c.id})">
-      <img src="${c.hero_image || 'https://via.placeholder.com/400x250/4361ee/ffffff?text=Course'}" class="card-img-top" alt="${c.title}">
+      <img src="${c.hero_image || '/images/fallback-course.svg'}" onerror="this.onerror=null;this.src='/images/fallback-course.svg'" class="card-img-top" alt="${c.title}">
       <div class="card-body"><h5 class="card-title">${c.title}</h5><p class="card-text">${c.description}</p><span class="badge bg-primary">${c.difficulty}</span></div></div></div>`).join('');
   }
   async viewCourse(id){
@@ -87,6 +87,7 @@ class LearningPlatform {
     }
     document.getElementById('course-progress-bar').style.width = `${c.progress||0}%`;
     document.getElementById('course-progress-text').textContent = `${c.progress||0}% Complete`;
+    this.updateProgressUI(c);
     this.displayModules(c.modules||[]);
   }
   displayModules(mods){
@@ -116,6 +117,13 @@ class LearningPlatform {
   async toggleTaskCompletion(taskId, completed){
     if(!auth.currentUser) return;
     try {
+      // Auto-enroll safeguard if user forgot to click enroll
+      if (this.currentCourse && !this.currentCourse.enrolled){
+        await fetch(`${this.apiBase}/courses/${this.currentCourse.id}/enroll`, { method:'POST', headers:{ Authorization:`Bearer ${localStorage.getItem('authToken')}` } });
+        this.currentCourse.enrolled = true;
+        const enrollBtn = document.getElementById('enroll-btn');
+        if(enrollBtn){ enrollBtn.textContent='Enrolled'; enrollBtn.disabled=true; }
+      }
       const r = await fetch(`${this.apiBase}/progress/task`, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${localStorage.getItem('authToken')}` }, body:JSON.stringify({ taskId, completed }) });
       const d = await r.json();
       if (r.ok){
@@ -123,10 +131,28 @@ class LearningPlatform {
         if (d.progress!==undefined){ 
           document.getElementById('course-progress-bar').style.width = `${d.progress}%`; 
           document.getElementById('course-progress-text').textContent = `${d.progress}% Complete`; 
+          if(d.totalTasks) document.querySelector('.task-counter')?.remove(); this.addTaskCounter(d.completedTasks||0, d.totalTasks||0);
+          if(d.progress===100) this.addCertButton();
         }
         if (d.courseCompleted) this.showCertificateModal();
       }
     } catch { utils.showAlert('Failed to update progress','danger'); }
+  }
+  updateProgressUI(c){
+    const total = (c.modules||[]).reduce((sum,m)=>(m.tasks||[]).length+sum,0);
+    const done = (c.modules||[]).reduce((sum,m)=>(m.tasks||[]).filter(t=>t.completed).length+sum,0);
+    this.addTaskCounter(done,total);
+    if(c.progress===100) this.addCertButton();
+  }
+  addTaskCounter(done,total){
+    document.querySelector('.task-counter')?.remove();
+    const bar = document.querySelector('.progress-card');
+    if(bar) bar.insertAdjacentHTML('beforeend',`<small class="task-counter text-muted">${done}/${total} tasks</small>`);
+  }
+  addCertButton(){
+    if(!auth.currentUser||document.getElementById('cert-btn')) return;
+    const card = document.querySelector('.progress-card');
+    if(card) card.insertAdjacentHTML('beforeend','<button id="cert-btn" class="btn btn-success btn-sm mt-2" onclick="app.generateCertificate(app.currentCourse.id)">Get Certificate</button>');
   }
   async loadProgress(){
     try { const r = await fetch(`${this.apiBase}/progress/my-progress`, { headers:{ Authorization:`Bearer ${localStorage.getItem('authToken')}` } }); const d = await r.json(); this.displayProgressData(d); } catch { utils.showAlert('Failed to load progress data','danger'); }
@@ -156,18 +182,108 @@ class LearningPlatform {
       document.getElementById('profile-avatar').textContent = utils.getUserInitials(u.username); 
       document.getElementById('profile-username').value = u.username; 
       document.getElementById('profile-email-input').value = u.email; 
+      this.loadCertificates();
     } catch { utils.showAlert('Failed to load profile','danger'); }
   }
+  async loadCertificates(){
+    try{
+      const r = await fetch(`${this.apiBase}/progress/my-progress`, { headers:{ Authorization:`Bearer ${localStorage.getItem('authToken')}` } });
+      const d = await r.json();
+      const certs = await fetch(`${this.apiBase}/certificates`, { headers:{ Authorization:`Bearer ${localStorage.getItem('authToken')}` } });
+      if(certs.ok){
+        const certList = await certs.json();
+        this.displayCertificates(certList);
+      }
+    }catch{}
+  }
+  displayCertificates(certs){
+    const container = document.getElementById('achievements-list')||document.querySelector('#achievements-list');
+    if(!container) return;
+    if(!certs.length) {
+      container.innerHTML='<div class="text-center"><i class="fas fa-trophy fa-3x text-muted mb-3"></i><h6 class="text-muted">No Certificates Yet</h6><p class="text-muted">Complete courses to earn certificates and showcase your achievements!</p></div>';
+    } else {
+      container.innerHTML = `
+        <div class="mb-3"><h6><i class="fas fa-award text-warning"></i> Your Certificates (${certs.length})</h6></div>
+        ${certs.map(c=>`
+          <div class="achievement-item d-flex justify-content-between align-items-center mb-3 p-3 border rounded bg-light">
+            <div class="d-flex align-items-center">
+              <div class="achievement-icon me-3">
+                <i class="fas fa-certificate fa-2x text-warning"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">${c.course_title}</h6>
+                <small class="text-muted"><i class="fas fa-calendar-alt"></i> Completed: ${utils.formatDate(c.completion_date)}</small>
+              </div>
+            </div>
+            <div>
+              <a href="/certificate.html?id=${c.certificate_id}" target="_blank" class="btn btn-primary btn-sm">
+                <i class="fas fa-eye"></i> View Certificate
+              </a>
+            </div>
+          </div>
+        `).join('')}
+      `;
+    }
+  }
   showCertificateModal(){
+    // Avoid multiple modals stacking
+    if (document.getElementById('certificate-modal')) return;
     const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.innerHTML = `<div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">🎉 Course Completed!</h5></div><div class="modal-body text-center"><h4>Congratulations!</h4><p>You've completed <strong>${this.currentCourse.title}</strong></p><p>Generate your certificate to showcase your achievement!</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Later</button><button type="button" class="btn btn-primary" onclick="app.generateCertificate(${this.currentCourse.id})">Generate Certificate</button></div></div></div>`;
+  modal.className = 'modal fade';
+    modal.id = 'certificate-modal';
+  modal.setAttribute('role','dialog');
+  modal.setAttribute('aria-modal','true');
+  modal.setAttribute('aria-labelledby','certificate-modal-title');
+    modal.innerHTML = `<div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 id="certificate-modal-title" class="modal-title">🎉 Course Completed!</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body text-center"><h4>Congratulations!</h4><p>You've completed <strong>${this.currentCourse?.title || 'the course'}</strong></p><p>Generate your certificate to showcase your achievement!</p><div id="certificate-error" class="text-danger small d-none"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Later</button><button type="button" id="generate-cert-btn" class="btn btn-primary">Generate Certificate</button></div></div></div>`;
     document.body.appendChild(modal);
-    const bsModal = new bootstrap.Modal(modal); bsModal.show();
+    const bsModal = new bootstrap.Modal(modal, { backdrop:'static' });
+    // Defer focus until after next frame & ensure aria-hidden removed
+    // Remove stray aria-hidden after show without forcing focus (lets browser / user agent manage focus)
+    modal.addEventListener('shown.bs.modal',()=>{ if (modal.getAttribute('aria-hidden')==='true') modal.removeAttribute('aria-hidden'); }, { once:true });
+    bsModal.show();
     modal.addEventListener('hidden.bs.modal', ()=> modal.remove());
+    modal.querySelector('#generate-cert-btn').addEventListener('click', ()=> this.generateCertificate(this.currentCourse?.id));
   }
   async generateCertificate(courseId){
-    try { const r = await fetch(`${this.apiBase}/courses/${courseId}/certificate`, { method:'POST', headers:{ Authorization:`Bearer ${localStorage.getItem('authToken')}` } }); const d = await r.json(); if(r.ok){ utils.showAlert('Certificate generated!','success'); document.querySelector('.modal .btn-secondary')?.click(); } else utils.showAlert(d.error,'danger'); } catch { utils.showAlert('Failed to generate certificate','danger'); }
+    try {
+      console.log('Generating certificate for course:', courseId);
+      const token = localStorage.getItem('authToken');
+      console.log('Using token:', token ? 'Token exists' : 'No token found');
+      
+      const r = await fetch(`${this.apiBase}/courses/${courseId}/certificate`, { 
+        method:'POST', 
+        headers:{ 
+          Authorization:`Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      });
+      
+      console.log('Response status:', r.status);
+      const d = await r.json();
+      console.log('Response data:', d);
+      
+      if(r.ok){
+        utils.showAlert('Certificate generated!','success');
+        const certUrl = `/certificate.html?id=${encodeURIComponent(d.certificateId)}`;
+        console.log('Opening certificate URL:', certUrl);
+        
+        // Refresh certificates list if we're on profile page
+        if(document.getElementById('achievements-list')) {
+          this.loadCertificates();
+        }
+        
+        // Close modal then open new tab/window
+        document.getElementById('certificate-modal')?.querySelector('[data-bs-dismiss="modal"]')?.click();
+        window.open(certUrl, '_blank');
+      } else {
+        const errBox = document.querySelector('#certificate-error');
+        if (errBox){ errBox.textContent = d.error || 'Unable to generate certificate'; errBox.classList.remove('d-none'); }
+        utils.showAlert(d.error || 'Not ready yet','warning');
+      }
+    } catch (error) { 
+      console.error('Certificate generation error:', error);
+      utils.showAlert('Failed to generate certificate','danger'); 
+    }
   }
 }
 

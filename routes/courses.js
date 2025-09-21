@@ -102,12 +102,34 @@ router.post('/:id/certificate', authenticateToken, async (req, res) => {
     const courseId = req.params.id;
     const userId = req.user.userId;
 
+    // Check if course is completed
     const [prog] = await pool.execute('SELECT progress FROM user_courses WHERE user_id = ? AND course_id = ?', [userId, courseId]);
-    if (!prog.length || prog[0].progress !== 100) return res.status(400).json({ error: 'Course not completed yet' });
+    if (!prog.length || prog[0].progress !== 100) {
+      return res.status(400).json({ error: 'Course not completed yet' });
+    }
 
+    // Check if certificate already exists
+    const [existing] = await pool.execute('SELECT certificate_id FROM certificates WHERE user_id = ? AND course_id = ?', [userId, courseId]);
+    if (existing.length) {
+      return res.json({ 
+        message: 'Certificate already exists', 
+        certificateId: existing[0].certificate_id, 
+        studentName: req.user.username, 
+        courseTitle: 'Course' 
+      });
+    }
+
+    // Get user and course info
+    const [userResult] = await pool.execute('SELECT username FROM users WHERE id = ?', [userId]);
+    const [courseResult] = await pool.execute('SELECT title FROM courses WHERE id = ?', [courseId]);
+    
+    if (!userResult.length || !courseResult.length) {
+      return res.status(400).json({ error: 'User or course not found' });
+    }
+
+    const user = userResult[0];
+    const course = courseResult[0];
     const certificateId = `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-    const [[user]] = await pool.execute('SELECT username FROM users WHERE id = ?', [userId]);
-    const [[course]] = await pool.execute('SELECT title FROM courses WHERE id = ?', [courseId]);
 
     await pool.execute('INSERT INTO certificates (certificate_id, user_id, course_id, student_name, course_title, completion_date) VALUES (?,?,?,?,?,?)', [
       certificateId,
@@ -118,8 +140,9 @@ router.post('/:id/certificate', authenticateToken, async (req, res) => {
       new Date().toISOString().split('T')[0]
     ]);
 
-    res.json({ message: 'Certificate generated', certificateId });
+    res.json({ message: 'Certificate generated', certificateId, studentName: user.username, courseTitle: course.title });
   } catch (err) {
+    console.error('Certificate generation error:', err);
     res.status(500).json({ error: 'Failed to generate certificate' });
   }
 });

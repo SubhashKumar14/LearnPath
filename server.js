@@ -6,6 +6,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
 const progressRoutes = require('./routes/progress');
+const certificateRoutes = require('./routes/certificates');
 const { testConnection } = require('./config/database');
 
 const app = express();
@@ -28,6 +29,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // 404 for API
 app.use('/api/*', (req, res) => {

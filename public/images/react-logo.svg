@@ -1,0 +1,13 @@
+<!-- Simplified React-style atom (educational use, not the official logo) -->
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' role='img' aria-labelledby='title desc'>
+	<title id='title'>React Course Icon</title>
+	<desc id='desc'>Abstract atomic orbital shape with central dot representing a technology course.</desc>
+	<rect x='0' y='0' width='256' height='256' rx='32' fill='#0d1117'/>
+	<g fill='none' stroke='#61dafb' stroke-width='10'>
+		<ellipse cx='128' cy='128' rx='88' ry='34'/>
+		<ellipse cx='128' cy='128' rx='88' ry='34' transform='rotate(60 128 128)'/>
+		<ellipse cx='128' cy='128' rx='88' ry='34' transform='rotate(120 128 128)'/>
+	</g>
+	<circle cx='128' cy='128' r='14' fill='#61dafb'/>
+	<text x='50%' y='222' text-anchor='middle' font-family='Arial,Helvetica,sans-serif' font-size='28' fill='#61dafb'>React</text>
+</svg>

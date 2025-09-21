@@ -17,6 +17,22 @@ router.post('/task', authenticateToken, async (req, res) => {
       ON DUPLICATE KEY UPDATE completed = VALUES(completed), completed_at = VALUES(completed_at)
     `, [userId, taskId, completed, completed ? new Date() : null]);
 
+    // Get the course ID for this task first
+    const [taskCourse] = await pool.execute(`
+      SELECT c.id AS course_id
+      FROM tasks t
+      JOIN modules m ON t.module_id = m.id
+      JOIN courses c ON m.course_id = c.id
+      WHERE t.id = ?
+    `, [taskId]);
+
+    if (!taskCourse.length) {
+      return res.status(400).json({ error: 'Task not found' });
+    }
+
+    const courseId = taskCourse[0].course_id;
+
+    // Now get progress for the entire course
     const [result] = await pool.execute(`
       SELECT c.id AS course_id, COUNT(t.id) AS total_tasks,
              COUNT(CASE WHEN up.completed = 1 THEN 1 END) AS completed_tasks
@@ -24,20 +40,43 @@ router.post('/task', authenticateToken, async (req, res) => {
       JOIN modules m ON t.module_id = m.id
       JOIN courses c ON m.course_id = c.id
       LEFT JOIN user_progress up ON t.id = up.task_id AND up.user_id = ?
-      WHERE t.id = ?
+      WHERE c.id = ?
       GROUP BY c.id
-    `, [userId, taskId]);
+    `, [userId, courseId]);
 
     if (result.length) {
-      const { course_id, total_tasks, completed_tasks } = result[0];
+      const { total_tasks, completed_tasks } = result[0];
       const progress = Math.round((completed_tasks / total_tasks) * 100);
+      
+      // Get current progress before updating (if exists)
+      const [currentRecord] = await pool.execute('SELECT progress FROM user_courses WHERE user_id = ? AND course_id = ?', [userId, courseId]);
+      const previousProgress = currentRecord[0]?.progress || 0;
+      
+      // Ensure enrollment row exists
+      await pool.execute(`
+        INSERT INTO user_courses (user_id, course_id, progress, enrolled_at) 
+        VALUES (?, ?, 0, NOW()) 
+        ON DUPLICATE KEY UPDATE progress = progress
+      `, [userId, courseId]);
+      
+      // Update progress
       await pool.execute('UPDATE user_courses SET progress = ?, completed_at = ? WHERE user_id = ? AND course_id = ?', [
         progress,
         progress === 100 ? new Date() : null,
         userId,
-        course_id
+        courseId
       ]);
-      return res.json({ message: 'Progress updated', progress, courseCompleted: progress === 100 && completed });
+      
+      // Show popup only when: completing a task AND progress goes from <100 to 100
+      const justCompleted = completed && progress === 100 && previousProgress < 100;
+      
+      return res.json({ 
+        message: 'Progress updated', 
+        progress, 
+        courseCompleted: justCompleted, 
+        totalTasks: total_tasks, 
+        completedTasks: completed_tasks 
+      });
     }
     res.json({ message: 'Progress updated' });
   } catch (err) {

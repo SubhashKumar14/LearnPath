@@ -56,6 +56,24 @@ npm start
 # Visit http://localhost:3000
 ```
 
+### Reseeding After Seed Changes
+If you update `database/schema.sql` (e.g. added more modules/tasks or changed course images):
+```powershell
+mysql -u root -p -e "DROP DATABASE IF EXISTS learning_platform;";
+mysql -u root -p < database/schema.sql
+```
+This will recreate all tables and insert the fresh extended seed data (5 modules * 3 tasks each per course).
+
+### Course Logos
+The sample courses now use technology logos:
+- JavaScript: `public/images/js-logo.svg`
+- React: `public/images/react-logo.svg`
+- Node.js: `public/images/node-logo.svg`
+
+These are referenced in seed data via `/images/<logo-file>` paths and served from the `public/images` directory.
+
+> Disclaimer: Icons are simplified, newly generated vector representations created for educational/demo purposes and are **not** the official trademarks. React, Node.js and JavaScript remain property of their respective owners. Replace with your own branding for production use.
+
 ## API Endpoints
 Auth
 - POST /api/auth/register  { username,email,password }
@@ -72,6 +90,9 @@ Progress
 - POST /api/progress/task  { taskId, completed } (auth)
 - GET  /api/progress/my-progress (auth)
 
+Certificates
+- GET  /api/certificates/:certificateId (auth, owner only)
+
 Health
 - GET /api/health
 
@@ -80,6 +101,12 @@ Tables: users, courses, modules, tasks, user_courses, user_progress, certificate
 
 ## Certificates
 When a course reaches 100% progress (all tasks completed) a user can generate a certificate. A unique `CERT-<timestamp>-<id>` is stored with user + course metadata.
+
+After generation the UI opens a new tab:
+```
+/certificate.html?id=<CERTIFICATE_ID>
+```
+That page fetches the certificate details (auth required) and allows PDF download via html2pdf (falls back to print if library fails). You can also supply URL params manually for quick previews: `?student=Name&course=Course+Title&id=TEST-ID`.
 
 ## Security Notes
 - Passwords hashed with bcrypt (12 rounds)
